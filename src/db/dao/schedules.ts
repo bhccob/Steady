@@ -34,6 +34,10 @@ export async function listSchedules(db: Db): Promise<Schedule[]> {
   return rows.map(fromRow);
 }
 
+export async function deleteSchedulesFor(db: Db, medId: string): Promise<void> {
+  await db.runAsync('DELETE FROM schedules WHERE med_id = ?', [medId]);
+}
+
 export async function insertSchedule(
   db: Db,
   input: { medId: string; times: string[]; days: number[] },

@@ -62,6 +62,15 @@ export async function insertMed(
   return (await getMed(db, id))!;
 }
 
+export async function updateMed(db: Db, id: string, input: { label: string | null; doseAmount: string | null; form: MedForm; color: string | null }): Promise<void> {
+  await db.runAsync('UPDATE meds SET label = ?, dose_amount = ?, form = ?, color = ? WHERE id = ?', [input.label, input.doseAmount, input.form, input.color, id]);
+}
+
+/** Hidden from lists and schedules; its marked history stays. */
+export async function archiveMedRow(db: Db, id: string): Promise<void> {
+  await db.runAsync('UPDATE meds SET active = 0 WHERE id = ?', [id]);
+}
+
 /** Cascades to the med's schedules and doses. */
 export async function deleteMed(db: Db, id: string): Promise<void> {
   await db.runAsync('DELETE FROM meds WHERE id = ?', [id]);

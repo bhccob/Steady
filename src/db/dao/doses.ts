@@ -66,6 +66,12 @@ export async function listDosesBetween(db: Db, from: LocalDate, to: LocalDate): 
   return rows.map(fromRow);
 }
 
+/** Removes a med's doses that were never marked, optionally only those due after `after`. Marked history stays. */
+export async function deletePendingDoses(db: Db, medId: string, after?: string): Promise<void> {
+  if (after) await db.runAsync("DELETE FROM doses WHERE med_id = ? AND status = 'pending' AND due_at_utc > ?", [medId, after]);
+  else await db.runAsync("DELETE FROM doses WHERE med_id = ? AND status = 'pending'", [medId]);
+}
+
 export async function setDoseStatus(
   db: Db,
   id: string,

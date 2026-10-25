@@ -4,6 +4,8 @@ export { getPermissionsAsync, requestPermissionsAsync } from 'expo-notifications
 export { IosAuthorizationStatus } from 'expo-notifications/build/NotificationPermissions.types';
 export { scheduleNotificationAsync } from 'expo-notifications/build/scheduleNotificationAsync';
 export { cancelScheduledNotificationAsync } from 'expo-notifications/build/cancelScheduledNotificationAsync';
+export { cancelAllScheduledNotificationsAsync } from 'expo-notifications/build/cancelAllScheduledNotificationsAsync';
+export { dismissAllNotificationsAsync } from 'expo-notifications/build/dismissAllNotificationsAsync';
 export { getAllScheduledNotificationsAsync } from 'expo-notifications/build/getAllScheduledNotificationsAsync';
 export { getPresentedNotificationsAsync } from 'expo-notifications/build/getPresentedNotificationsAsync';
 export { dismissNotificationAsync } from 'expo-notifications/build/dismissNotificationAsync';

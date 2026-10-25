@@ -13,7 +13,8 @@ import { AppText } from '../ui/Text';
 export const TOTAL_STEPS = 11;
 
 interface StepLayoutProps {
-  step: number;
+  /** Onboarding step for the progress line. Settings pages leave it out and show no progress. */
+  step?: number;
   title: string;
   subtitle?: string;
   children?: ReactNode;
@@ -34,14 +35,18 @@ export function StepLayout({ step, title, subtitle, children, footer }: StepLayo
             <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.barSide}>
               <Icon name="chevron-left" size={26} />
             </Pressable>
-            <View
-              style={styles.progress}
-              accessibilityRole="progressbar"
-              accessibilityLabel={`Step ${step} of ${TOTAL_STEPS}`}
-              accessibilityValue={{ min: 0, max: TOTAL_STEPS, now: step }}
-            >
-              <View style={[styles.progressDone, { width: `${(step / TOTAL_STEPS) * 100}%`, backgroundColor: theme.accentLine }]} />
-            </View>
+            {step === undefined ? (
+              <View style={styles.grow} />
+            ) : (
+              <View
+                style={styles.progress}
+                accessibilityRole="progressbar"
+                accessibilityLabel={`Step ${step} of ${TOTAL_STEPS}`}
+                accessibilityValue={{ min: 0, max: TOTAL_STEPS, now: step }}
+              >
+                <View style={[styles.progressDone, { width: `${(step / TOTAL_STEPS) * 100}%`, backgroundColor: theme.accentLine }]} />
+              </View>
+            )}
             <View style={styles.barSide} />
           </View>
 
@@ -71,6 +76,7 @@ const styles = StyleSheet.create({
   barSide: { width: 56, height: layout.minTarget, justifyContent: 'center' },
   progress: { flex: 1, height: 3, borderRadius: 99, overflow: 'hidden', backgroundColor: 'rgba(27, 22, 19, 0.1)' },
   progressDone: { height: '100%', borderRadius: 99 },
+  grow: { flex: 1 },
   content: { paddingTop: 16, paddingBottom: 24 },
   subtitle: { marginTop: 6 },
   body: { marginTop: 20, gap: 14 },
