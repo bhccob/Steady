@@ -24,21 +24,3 @@ Steady helps you keep track. It isn't medical advice and doesn't replace care fr
 
 Built with Expo (SDK 58), React Native and TypeScript. Data lives in SQLite on the device.
 
-```sh
-npm install
-npx expo start
-```
-
-Most of the app runs in Expo Go. Background marking from notifications and the Android widget need a development build:
-
-```sh
-npx eas-cli build --profile development --platform android
-```
-
-Checks:
-
-```sh
-npm test
-npm run typecheck
-npm run lint
-```
