@@ -11,7 +11,8 @@ import { getProfile, type Profile } from '../db/dao/profile';
 import { collectTrophy, listTrophies, type CollectedTrophy } from '../db/dao/trophies';
 import type { Mood } from '../db/schema';
 import { reconcileDoses } from '../doses/reconcile';
-import { addDays, type LocalDate } from '../lib/time';
+import { celebrateHaptic, lightHaptic, markHaptic } from '../lib/haptics';
+import { addDays, MINUTE_MS, type LocalDate } from '../lib/time';
 import { localDateIn, localMinutesIn } from '../lib/tz';
 import { expoPort, syncSoon } from '../notify/expoPort';
 import { useApp } from '../state/app';
@@ -19,6 +20,8 @@ import { LEVEL_RULES } from '../support/level';
 import { bedtimeCard, type BedtimeCard } from './bedtime';
 import { shouldOfferHelp } from './help';
 import { markDose, type MarkOutcome } from './markDose';
+
+const REFRESH_MS = 5 * MINUTE_MS;
 
 export interface HomeData {
   profile: Profile;
@@ -84,12 +87,20 @@ export function useHome() {
     return () => sub.remove();
   }, [load]);
 
+  // While Home stays open: the waiting bar moves on, and a new day starts after midnight (spec §3.5).
+  useEffect(() => {
+    const t = setInterval(load, REFRESH_MS);
+    return () => clearInterval(t);
+  }, [load]);
+
   // A notification button can change doses while Home is showing.
   useEffect(() => useApp.subscribe((s, prev) => s.dataVersion !== prev.dataVersion && load()), [load]);
 
   const mark = useCallback(
     async (doseId: string): Promise<MarkOutcome | null> => {
       const outcome = await markDose(db, { doseId, nowUtc: new Date().toISOString() });
+      if (outcome?.comeback) celebrateHaptic();
+      else if (outcome) markHaptic();
       expoPort.dismiss([doseId]).catch(() => {});
       await load(); // re-syncs reminders, cancelling the rest for this dose
       return outcome;
@@ -101,6 +112,7 @@ export function useHome() {
   const pickMood = useCallback(
     async (mood: Mood): Promise<boolean> => {
       if (!data) return false;
+      lightHaptic();
       await upsertCheckin(db, data.today, mood);
       if (mood !== 'rough') return false;
       const rule = LEVEL_RULES[data.profile.supportLevel].helpOnRough;
@@ -116,7 +128,7 @@ export function useHome() {
 
   const collect = useCallback(
     async (weekStart: LocalDate, daysMarked: number) => {
-      await collectTrophy(db, weekStart, daysMarked);
+      if (await collectTrophy(db, weekStart, daysMarked)) celebrateHaptic();
       await load();
     },
     [db, load],
@@ -124,6 +136,7 @@ export function useHome() {
 
   /** Goodnight: quiet until wake-up. Same as the notification button. */
   const goodnight = useCallback(async () => {
+    lightHaptic();
     await logEvent(db, 'goodnight', { at: new Date().toISOString() });
     syncSoon(db);
     await load();

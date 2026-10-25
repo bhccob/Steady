@@ -9,6 +9,7 @@ import { listMeds, type Med } from '../db/dao/meds';
 import { getProfile, type Profile } from '../db/dao/profile';
 import { listTrophies, type CollectedTrophy } from '../db/dao/trophies';
 import { markDose, type MarkOutcome } from '../home/markDose';
+import { celebrateHaptic, markHaptic } from '../lib/haptics';
 import { addDays, type LocalDate } from '../lib/time';
 import { localDateIn, localMinutesIn } from '../lib/tz';
 import { expoPort, syncSoon } from '../notify/expoPort';
@@ -67,6 +68,8 @@ export function useHistory() {
   const mark = useCallback(
     async (doseId: string): Promise<MarkOutcome | null> => {
       const outcome = await markDose(db, { doseId, nowUtc: new Date().toISOString() });
+      if (outcome?.comeback) celebrateHaptic();
+      else if (outcome) markHaptic();
       expoPort.dismiss([doseId]).catch(() => {});
       syncSoon(db);
       await load();
