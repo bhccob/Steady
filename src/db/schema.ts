@@ -163,3 +163,8 @@ CREATE TABLE trophies (
   collected_at TEXT NOT NULL
 );
 `;
+
+/** The crisis line the user picked, overriding the phone's region (spec §8.4). Null follows the phone. */
+export const SCHEMA_V5 = `
+ALTER TABLE profile ADD COLUMN crisis_region TEXT;
+`;

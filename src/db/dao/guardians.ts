@@ -65,6 +65,11 @@ export async function insertGuardian(
   return fromRow(row!);
 }
 
+/** The guardian said yes (their reply to the invite). Only then can they be reached from the help sheet. */
+export async function markGuardianAgreed(db: Db, id: string): Promise<void> {
+  await db.runAsync('UPDATE guardians SET consented_at = ? WHERE id = ?', [nowIso(), id]);
+}
+
 /** Instant and silent: nothing is sent to the guardian. */
 export async function revokeGuardian(db: Db, id: string): Promise<void> {
   await db.runAsync('UPDATE guardians SET revoked_at = ?, invite_token = NULL WHERE id = ?', [nowIso(), id]);

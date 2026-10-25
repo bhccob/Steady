@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
-    "backgroundColor": "#FBF7F2",
+    "backgroundColor": "#F5F3EF",
     "ios": {
       "supportsTablet": true
     },
@@ -18,7 +18,13 @@
       "expo-status-bar",
       "expo-sqlite",
       "expo-localization",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Steady opens your contacts only when you pick someone to add as a guardian."
+        }
+      ]
     ]
   }
 }

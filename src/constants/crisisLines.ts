@@ -10,15 +10,22 @@ const BY_REGION: Record<string, CrisisLine> = {
   GB: { country: 'United Kingdom', number: '116 123' },
   NL: { country: 'Netherlands', number: '113' },
   AU: { country: 'Australia', number: '13 11 14' },
+  EU: { country: 'Europe', number: '116 123' },
 };
 
 const EU = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'];
-const EU_LINE: CrisisLine = { country: 'Europe', number: '116 123' };
 
-export const ALL_CRISIS_LINES: CrisisLine[] = [...Object.values(BY_REGION), EU_LINE];
+export const ALL_CRISIS_LINES: CrisisLine[] = Object.values(BY_REGION);
 
-/** The line for the phone's region, or null when we don't have one (then show them all). */
-export function crisisLineFor(region: string | null | undefined): CrisisLine | null {
+/** The choices for "my crisis line" (spec §8.4 manual override). */
+export const CRISIS_REGIONS: { value: string; label: string }[] = Object.entries(BY_REGION).map(([value, l]) => ({ value, label: l.country }));
+
+function lookup(region: string | null | undefined): CrisisLine | null {
   if (!region) return null;
-  return BY_REGION[region] ?? (EU.includes(region) ? EU_LINE : null);
+  return BY_REGION[region] ?? (EU.includes(region) ? BY_REGION.EU! : null);
+}
+
+/** The line for the region the user chose, else the phone's region, else null (then show them all). */
+export function crisisLineFor(chosen: string | null | undefined, detected: string | null | undefined): CrisisLine | null {
+  return lookup(chosen) ?? lookup(detected);
 }

@@ -4,7 +4,7 @@ import { getCheckin, listCheckins, upsertCheckin } from '../dao/checkins';
 import { getDose, insertPendingDose, listDosesBetween, lockExpiredDoses, setDoseStatus } from '../dao/doses';
 import { eventsSince, hasEventForDate, lastEventAt, latestEventTime, listEvents, logEvent } from '../dao/events';
 import { collectTrophy, listTrophies } from '../dao/trophies';
-import { insertGuardian, listGuardians, revokeGuardian } from '../dao/guardians';
+import { insertGuardian, listGuardians, markGuardianAgreed, revokeGuardian } from '../dao/guardians';
 import { deleteMed, insertMed, listMeds } from '../dao/meds';
 import { createProfile, getProfile, updateProfile } from '../dao/profile';
 import { insertSchedule, listSchedules } from '../dao/schedules';
@@ -217,7 +217,24 @@ describe('timed events', () => {
   });
 });
 
+describe('crisis region', () => {
+  it('starts unset and keeps the region the user picks', async () => {
+    const db = await freshDb();
+    await createProfile(db, { displayName: 'sam', timezone: 'UTC' });
+    expect((await getProfile(db))?.crisisRegion).toBeNull();
+    await updateProfile(db, { crisisRegion: 'NL' });
+    expect((await getProfile(db))?.crisisRegion).toBe('NL');
+  });
+});
+
 describe('guardians', () => {
+  it('marks a guardian as having said yes', async () => {
+    const db = await freshDb();
+    const g = await insertGuardian(db, { displayName: 'Alex', channel: 'whatsapp', contact: '+31600000000' });
+    await markGuardianAgreed(db, g.id);
+    expect((await listGuardians(db))[0]?.consentedAt).not.toBeNull();
+  });
+
   it('drops a revoked guardian from the list', async () => {
     const db = await freshDb();
     const g = await insertGuardian(db, { displayName: 'Alex', channel: 'whatsapp', contact: '+31600000000' });

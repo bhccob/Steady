@@ -18,13 +18,14 @@ export function HelpSheet() {
   const db = useSQLiteContext();
   const help = useApp((s) => s.help);
   const closeHelp = useApp((s) => s.closeHelp);
+  const crisisRegion = useApp((s) => s.crisisRegion);
   const [guardians, setGuardians] = useState<Guardian[]>([]);
 
   useEffect(() => {
     if (help) listGuardians(db).then(setGuardians);
   }, [help, db]);
 
-  const line = crisisLineFor(getLocales()[0]?.regionCode);
+  const line = crisisLineFor(crisisRegion, getLocales()[0]?.regionCode);
   const lines = line ? [line] : ALL_CRISIS_LINES;
   const rough = help === 'rough';
 

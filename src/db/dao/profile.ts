@@ -21,6 +21,8 @@ export interface Profile {
   supportLevel: SupportLevel;
   /** True when the user picked the level themselves instead of the suggested one. */
   supportLevelChosen: boolean;
+  /** Crisis line region the user picked; null follows the phone's region. */
+  crisisRegion: string | null;
   createdAt: string;
 }
 
@@ -41,6 +43,7 @@ interface ProfileRow {
   still_up: StillUp | null;
   support_level: SupportLevel;
   support_level_chosen: number;
+  crisis_region: string | null;
   created_at: string;
 }
 
@@ -59,6 +62,7 @@ const COLUMNS: Record<keyof ProfilePatch, string> = {
   stillUp: 'still_up',
   supportLevel: 'support_level',
   supportLevelChosen: 'support_level_chosen',
+  crisisRegion: 'crisis_region',
 };
 
 function fromRow(r: ProfileRow): Profile {
@@ -77,6 +81,7 @@ function fromRow(r: ProfileRow): Profile {
     stillUp: r.still_up,
     supportLevel: r.support_level,
     supportLevelChosen: r.support_level_chosen === 1,
+    crisisRegion: r.crisis_region,
     createdAt: r.created_at,
   };
 }

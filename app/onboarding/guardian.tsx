@@ -16,7 +16,7 @@ export default function GuardianStep() {
   const router = useRouter();
   const saved = useOnboarding((s) => s.draft.guardian);
   const patch = useOnboarding((s) => s.patch);
-  const [g, setG] = useState<DraftGuardian>(saved ?? { name: '', relationship: 'Friend', channel: 'inapp', contact: '' });
+  const [g, setG] = useState<DraftGuardian>(saved ?? { name: '', relationship: 'Friend', channel: 'whatsapp', contact: '' });
   const [hint, setHint] = useState('');
   const contact = CONTACT_FIELD[g.channel];
   const button = guardianButton(g);
@@ -58,7 +58,7 @@ export default function GuardianStep() {
       <TextField
         label={contact.label}
         placeholder={contact.placeholder}
-        hint={contact.hint}
+        hint={g.channel === 'inapp' ? 'Connecting inside Steady needs accounts, which are coming later. Pick another way for now.' : contact.hint}
         value={g.contact}
         onChangeText={(c) => setG({ ...g, contact: c })}
         keyboardType={contact.phone ? 'phone-pad' : 'default'}

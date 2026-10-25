@@ -50,6 +50,7 @@ export function useHome() {
     const moodDismissed = await hasEventForDate(db, 'mood_prompt_dismissed', today);
     const trophies = await listTrophies(db);
     setSupportLevel(profile.supportLevel);
+    useApp.getState().setCrisisRegion(profile.crisisRegion);
     setData({ profile, today, nowMs: now.getTime(), nowMinutes: localMinutesIn(now, tz), doses, meds, checkinToday, moodDismissed, trophies });
   }, [db, setSupportLevel]);
 
