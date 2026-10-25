@@ -26,10 +26,12 @@ interface MoodPromptProps {
   onDismiss: () => void;
   /** Called once the prompt has faded out, with the mood picked (or null for "Not now"). */
   onDone: (mood: Mood | null) => void;
+  /** Close's evening check-in: asks about the evening instead of the day. */
+  evening?: boolean;
 }
 
 /** First open of the day: "How's today?" Open and box-free; one tap and it's gone until tomorrow. */
-export function MoodPrompt({ visible, name, hour, onPick, onDismiss, onDone }: MoodPromptProps) {
+export function MoodPrompt({ visible, name, hour, onPick, onDismiss, onDone, evening = false }: MoodPromptProps) {
   const theme = useTheme();
   const reduced = useReducedMotion();
   const glassMode = usePerf((s) => s.glassMode);
@@ -56,7 +58,17 @@ export function MoodPrompt({ visible, name, hour, onPick, onDismiss, onDone }: M
 
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const title = picked ? 'Noted.' : name.trim() ? `${greeting}, ${name.trim()}.` : `${greeting}.`;
-  const sub = picked ? (picked === 'rough' ? "Go easy today. We're here." : 'Have a gentle day.') : "How's today?";
+  const sub = evening
+    ? picked
+      ? picked === 'rough'
+        ? "Go easy tonight. We're here."
+        : 'Rest well tonight.'
+      : "How's this evening?"
+    : picked
+      ? picked === 'rough'
+        ? "Go easy today. We're here."
+        : 'Have a gentle day.'
+      : "How's today?";
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={() => { onDismiss(); close(null, 0); }} statusBarTranslucent>

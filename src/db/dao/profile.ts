@@ -23,6 +23,8 @@ export interface Profile {
   supportLevelChosen: boolean;
   /** Crisis line region the user picked; null follows the phone's region. */
   crisisRegion: string | null;
+  /** Blur the app in the app switcher (iOS) or mark the window secure (Android, which also blocks screenshots). */
+  hideInSwitcher: boolean;
   createdAt: string;
 }
 
@@ -44,6 +46,7 @@ interface ProfileRow {
   support_level: SupportLevel;
   support_level_chosen: number;
   crisis_region: string | null;
+  hide_in_switcher: number;
   created_at: string;
 }
 
@@ -63,6 +66,7 @@ const COLUMNS: Record<keyof ProfilePatch, string> = {
   supportLevel: 'support_level',
   supportLevelChosen: 'support_level_chosen',
   crisisRegion: 'crisis_region',
+  hideInSwitcher: 'hide_in_switcher',
 };
 
 function fromRow(r: ProfileRow): Profile {
@@ -82,6 +86,7 @@ function fromRow(r: ProfileRow): Profile {
     supportLevel: r.support_level,
     supportLevelChosen: r.support_level_chosen === 1,
     crisisRegion: r.crisis_region,
+    hideInSwitcher: r.hide_in_switcher === 1,
     createdAt: r.created_at,
   };
 }

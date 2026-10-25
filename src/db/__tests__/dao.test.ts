@@ -1,6 +1,6 @@
 import { createTestDb } from '../../test-utils/sqlite';
 import { awardBadge } from '../dao/badges';
-import { getCheckin, listCheckins, upsertCheckin } from '../dao/checkins';
+import { getCheckin, getEveningCheckin, listCheckins, upsertCheckin, upsertEveningCheckin } from '../dao/checkins';
 import { getDose, insertPendingDose, listDosesBetween, lockExpiredDoses, setDoseStatus } from '../dao/doses';
 import { eventsSince, hasEventForDate, lastEventAt, latestEventTime, listEvents, logEvent } from '../dao/events';
 import { collectTrophy, listTrophies } from '../dao/trophies';
@@ -30,7 +30,7 @@ describe('migrate', () => {
       .map((r) => r.name)
       .sort();
     expect(names).toEqual(
-      ['badges', 'checkins', 'doses', 'events', 'guardians', 'meds', 'profile', 'schedules', 'support_conditions', 'trophies'],
+      ['badges', 'checkins', 'doses', 'evening_checkins', 'events', 'guardians', 'meds', 'profile', 'schedules', 'support_conditions', 'trophies'],
     );
     expect([...TABLES].sort()).toEqual(names);
   });
@@ -214,6 +214,28 @@ describe('timed events', () => {
     await logEvent(db, 'goodnight', { at: '2026-10-25T23:10:00.000Z' });
     await logEvent(db, 'goodnight', { at: '2026-10-24T23:00:00.000Z' });
     expect(await latestEventTime(db, 'goodnight')).toBe('2026-10-25T23:10:00.000Z');
+  });
+});
+
+describe('privacy settings', () => {
+  it('keeps app-switcher hiding off until the user turns it on', async () => {
+    const db = await freshDb();
+    await createProfile(db, { displayName: 'sam', timezone: 'UTC' });
+    expect((await getProfile(db))?.hideInSwitcher).toBe(false);
+    await updateProfile(db, { hideInSwitcher: true, biometricLock: true });
+    expect(await getProfile(db)).toMatchObject({ hideInSwitcher: true, biometricLock: true });
+  });
+});
+
+describe('evening check-ins', () => {
+  it('keeps one evening mood per day, apart from the morning one', async () => {
+    const db = await freshDb();
+    await upsertCheckin(db, '2026-10-25', 'okay');
+    await upsertEveningCheckin(db, '2026-10-25', 'rough');
+    await upsertEveningCheckin(db, '2026-10-25', 'happy');
+    expect((await getCheckin(db, '2026-10-25'))?.mood).toBe('okay');
+    expect((await getEveningCheckin(db, '2026-10-25'))?.mood).toBe('happy');
+    expect(await getEveningCheckin(db, '2026-10-24')).toBeNull();
   });
 });
 

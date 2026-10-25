@@ -1,8 +1,9 @@
 import Constants from 'expo-constants';
+import { authenticateAsync, hasHardwareAsync, isEnrolledAsync } from 'expo-local-authentication';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { listMeds, type Med } from '../../src/db/dao/meds';
@@ -27,6 +28,7 @@ import { Icon } from '../../src/ui/Icon';
 import { AppText } from '../../src/ui/Text';
 import { TextField } from '../../src/ui/TextField';
 import { TimeStepper } from '../../src/ui/TimeStepper';
+import { Toggle } from '../../src/ui/Toggle';
 
 interface SettingsData {
   profile: Profile;
@@ -84,6 +86,30 @@ export default function SettingsScreen() {
   const [quiet, setQuiet] = useState({ startMin: 1320, endMin: 420 });
   const [confirmWord, setConfirmWord] = useState('');
   const [note, setNote] = useState('');
+  const privacy = useApp((s) => s.privacy);
+  const [lockReady, setLockReady] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    Promise.all([hasHardwareAsync(), isEnrolledAsync()])
+      .then(([hardware, enrolled]) => setLockReady(hardware && enrolled))
+      .catch(() => setLockReady(false));
+  }, []);
+
+  const setLock = async (on: boolean) => {
+    if (on) {
+      if (!lockReady) return;
+      // Check it works before relying on it, so nobody locks themselves out.
+      const result = await authenticateAsync({ promptMessage: 'Turn on the lock' });
+      if (!result.success) return;
+    }
+    await updateProfile(db, { biometricLock: on });
+    useApp.getState().setPrivacy({ ...useApp.getState().privacy, lock: on });
+  };
+
+  const setHide = async (on: boolean) => {
+    await updateProfile(db, { hideInSwitcher: on });
+    useApp.getState().setPrivacy({ ...useApp.getState().privacy, hide: on });
+  };
 
   const load = useCallback(async () => {
     const profile = await getProfile(db);
@@ -139,6 +165,7 @@ export default function SettingsScreen() {
     await cancelAllScheduledNotificationsAsync().catch(() => {});
     await dismissAllNotificationsAsync().catch(() => {});
     useOnboarding.getState().reset();
+    useApp.getState().setPrivacy({ lock: false, hide: false });
     router.replace('/onboarding');
   };
 
@@ -185,6 +212,21 @@ export default function SettingsScreen() {
 
           <Section title="Sleep">
             <Row label="Bedtime reminders" value={sleepValue} onPress={() => router.push('/edit/sleep')} />
+          </Section>
+
+          <Section title="Privacy">
+            <Toggle
+              label="Lock with face or fingerprint"
+              hint={lockReady === false ? 'Set up face or fingerprint unlock on your phone first.' : 'Asks when Steady opens, or after it has been away a while.'}
+              value={privacy.lock}
+              onChange={setLock}
+            />
+            <Toggle
+              label="Hide in app switcher"
+              hint={Platform.OS === 'ios' ? 'Blurs Steady in the app switcher.' : 'Shows a blank preview. On Android this also blocks screenshots.'}
+              value={privacy.hide}
+              onChange={setHide}
+            />
           </Section>
 
           <Section title="Your data">

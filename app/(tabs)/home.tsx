@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Mood } from '../../src/db/schema';
 import { DaySheet } from '../../src/home/DaySheet';
+import { eveningCheckinDue } from '../../src/home/evening';
 import { MoodPrompt } from '../../src/home/MoodPrompt';
 import { buildPath, indexOfToday, type PathEntry } from '../../src/home/path';
 import { BedtimeCard } from '../../src/home/BedtimeCard';
@@ -25,10 +26,11 @@ import { AppText } from '../../src/ui/Text';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { data, reload, mark, pickMood, dismissMood, collect, goodnight, moreTime, noteHelpOffered } = useHome();
+  const { data, reload, mark, pickMood, dismissMood, pickEveningMood, dismissEvening, collect, goodnight, moreTime, noteHelpOffered } = useHome();
   const openHelp = useApp((s) => s.openHelp);
   const [sheet, setSheet] = useState<{ entry: PathEntry; justCollected: boolean } | null>(null);
   const [moodHandled, setMoodHandled] = useState(false);
+  const [eveningHandled, setEveningHandled] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const [note, setNote] = useState<string | undefined>();
   const offerHelp = useRef<Promise<boolean>>(Promise.resolve(false));
@@ -41,13 +43,23 @@ export default function HomeScreen() {
 
   // At Steady and Close, a dose left open gently offers the help sheet once a day, after the mood question.
   const moodShowing = !!data && !data.checkinToday && !data.moodDismissed && !moodHandled;
+  const eveningShowing =
+    !!data &&
+    !eveningHandled &&
+    eveningCheckinDue({
+      level: data.profile.supportLevel,
+      nowMinutes: data.nowMinutes,
+      morningShowing: moodShowing,
+      eveningDone: data.eveningDone,
+      dismissed: data.eveningDismissed,
+    });
   const helpShownFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!data?.helpDue || moodShowing || helpShownFor.current === data.today || useApp.getState().help) return;
+    if (!data?.helpDue || moodShowing || eveningShowing || helpShownFor.current === data.today || useApp.getState().help) return;
     helpShownFor.current = data.today;
     openHelp('overdue');
     noteHelpOffered();
-  }, [data, moodShowing, openHelp, noteHelpOffered]);
+  }, [data, moodShowing, eveningShowing, openHelp, noteHelpOffered]);
 
   if (!data) return <Background />;
 
@@ -165,6 +177,28 @@ export default function HomeScreen() {
           setMoodHandled(true);
           if (m === 'rough' && (await offerHelp.current)) {
             // Counts as today's offer, so the overdue sheet doesn't follow right after.
+            helpShownFor.current = data.today;
+            openHelp('rough');
+            noteHelpOffered();
+          }
+          reload();
+        }}
+      />
+
+      <MoodPrompt
+        evening
+        visible={eveningShowing}
+        name={profile.displayName}
+        hour={Math.floor(data.nowMinutes / 60)}
+        onPick={(m: Mood) => {
+          offerHelp.current = pickEveningMood(m);
+        }}
+        onDismiss={() => {
+          dismissEvening();
+        }}
+        onDone={async (m) => {
+          setEveningHandled(true);
+          if (m === 'rough' && (await offerHelp.current)) {
             helpShownFor.current = data.today;
             openHelp('rough');
             noteHelpOffered();

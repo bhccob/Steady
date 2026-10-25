@@ -22,6 +22,7 @@ export const TABLES = [
   'badges',
   'support_conditions',
   'trophies',
+  'evening_checkins',
 ] as const;
 export type TableName = (typeof TABLES)[number];
 
@@ -167,4 +168,15 @@ CREATE TABLE trophies (
 /** The crisis line the user picked, overriding the phone's region (spec §8.4). Null follows the phone. */
 export const SCHEMA_V5 = `
 ALTER TABLE profile ADD COLUMN crisis_region TEXT;
+`;
+
+/** Hide in app switcher (off by default: on Android it also blocks screenshots), and Close's evening check-in. */
+export const SCHEMA_V6 = `
+ALTER TABLE profile ADD COLUMN hide_in_switcher INTEGER NOT NULL DEFAULT 0;
+CREATE TABLE evening_checkins (
+  id TEXT PRIMARY KEY,
+  date_local TEXT NOT NULL UNIQUE,
+  mood TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 `;

@@ -3,7 +3,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
-import { getCheckin, upsertCheckin, type Checkin } from '../db/dao/checkins';
+import { getCheckin, getEveningCheckin, upsertCheckin, upsertEveningCheckin, type Checkin } from '../db/dao/checkins';
 import { listDosesBetween, type Dose } from '../db/dao/doses';
 import { hasEventForDate, latestEventTime, logEvent } from '../db/dao/events';
 import { listMeds, type Med } from '../db/dao/meds';
@@ -32,6 +32,9 @@ export interface HomeData {
   meds: Map<string, Med>;
   checkinToday: Checkin | null;
   moodDismissed: boolean;
+  /** Close's evening check-in: answered, or put off with "Not now", today. */
+  eveningDone: boolean;
+  eveningDismissed: boolean;
   trophies: CollectedTrophy[];
   bedtime: BedtimeCard;
   /** A dose has been open long enough for this support level to offer the help sheet. */
@@ -56,6 +59,8 @@ export function useHome() {
     const meds = new Map((await listMeds(db, { includeInactive: true })).map((m) => [m.id, m]));
     const checkinToday = await getCheckin(db, today);
     const moodDismissed = await hasEventForDate(db, 'mood_prompt_dismissed', today);
+    const eveningDone = (await getEveningCheckin(db, today)) !== null;
+    const eveningDismissed = await hasEventForDate(db, 'evening_prompt_dismissed', today);
     const trophies = await listTrophies(db);
     const { bedtimeMin, wakeMin } = profile;
     const bedtime = bedtimeCard({
@@ -73,7 +78,21 @@ export function useHome() {
     });
     setSupportLevel(profile.supportLevel);
     useApp.getState().setCrisisRegion(profile.crisisRegion);
-    setData({ profile, today, nowMs: now.getTime(), nowMinutes: localMinutesIn(now, tz), doses, meds, checkinToday, moodDismissed, trophies, bedtime, helpDue });
+    setData({
+      profile,
+      today,
+      nowMs: now.getTime(),
+      nowMinutes: localMinutesIn(now, tz),
+      doses,
+      meds,
+      checkinToday,
+      moodDismissed,
+      eveningDone,
+      eveningDismissed,
+      trophies,
+      bedtime,
+      helpDue,
+    });
   }, [db, setSupportLevel]);
 
   useFocusEffect(
@@ -126,6 +145,22 @@ export function useHome() {
     if (data) await logEvent(db, 'mood_prompt_dismissed', { date: data.today });
   }, [db, data]);
 
+  /** Saves the evening mood. Returns true when the reach-out sheet should be offered. */
+  const pickEveningMood = useCallback(
+    async (mood: Mood): Promise<boolean> => {
+      if (!data) return false;
+      lightHaptic();
+      await upsertEveningCheckin(db, data.today, mood);
+      if (mood !== 'rough') return false;
+      return LEVEL_RULES[data.profile.supportLevel].helpOnRough === 'right_away' || data.checkinToday?.mood === 'rough';
+    },
+    [db, data],
+  );
+
+  const dismissEvening = useCallback(async () => {
+    if (data) await logEvent(db, 'evening_prompt_dismissed', { date: data.today });
+  }, [db, data]);
+
   const collect = useCallback(
     async (weekStart: LocalDate, daysMarked: number) => {
       if (await collectTrophy(db, weekStart, daysMarked)) celebrateHaptic();
@@ -154,5 +189,5 @@ export function useHome() {
     if (data) await logEvent(db, 'help_offered', { date: data.today });
   }, [db, data]);
 
-  return { data, reload: load, mark, pickMood, dismissMood, collect, goodnight, moreTime, noteHelpOffered };
+  return { data, reload: load, mark, pickMood, dismissMood, pickEveningMood, dismissEvening, collect, goodnight, moreTime, noteHelpOffered };
 }

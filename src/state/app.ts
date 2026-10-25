@@ -12,8 +12,11 @@ interface AppState {
   dataVersion: number;
   /** The crisis line region the user picked; null follows the phone. */
   crisisRegion: string | null;
+  /** Face or fingerprint lock, and hiding the app in the app switcher. */
+  privacy: { lock: boolean; hide: boolean };
   setSupportLevel: (l: SupportLevel) => void;
   setCrisisRegion: (r: string | null) => void;
+  setPrivacy: (p: { lock: boolean; hide: boolean }) => void;
   openHelp: (reason: HelpReason) => void;
   closeHelp: () => void;
   bumpData: () => void;
@@ -24,8 +27,10 @@ export const useApp = create<AppState>((set) => ({
   help: null,
   dataVersion: 0,
   crisisRegion: null,
+  privacy: { lock: false, hide: false },
   setSupportLevel: (supportLevel) => set({ supportLevel }),
   setCrisisRegion: (crisisRegion) => set({ crisisRegion }),
+  setPrivacy: (privacy) => set({ privacy }),
   openHelp: (help) => set({ help }),
   closeHelp: () => set({ help: null }),
   bumpData: () => set((s) => ({ dataVersion: s.dataVersion + 1 })),
