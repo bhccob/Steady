@@ -8,7 +8,7 @@ import type { Med } from '../db/dao/meds';
 import { shortDate } from '../lib/time';
 import { steadyScore } from '../scoring/score';
 import { classifyMark } from '../scoring/status';
-import { DECOR_FONT_SCALE } from '../theme/tokens';
+import { DECOR_FONT_SCALE, HAIRLINE } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { BottomSheet } from '../ui/BottomSheet';
 import { AppText } from '../ui/Text';
@@ -132,7 +132,7 @@ export function DaySheet({ entry, justCollected, doses, meds, today, nowMs, cloc
 }
 
 const styles = StyleSheet.create({
-  row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(27, 22, 19, 0.08)' },
+  row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: HAIRLINE },
   grow: { flex: 1 },
   mark: { minHeight: 44, paddingHorizontal: 18, borderRadius: 999, borderBottomWidth: 4, alignItems: 'center', justifyContent: 'center' },
   note: { marginTop: 10 },

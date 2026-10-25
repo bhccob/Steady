@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { MED_FORMS, PILL_COLOURS } from '../../src/onboarding/options';
 import { StepLayout } from '../../src/onboarding/StepLayout';
 import { useOnboarding } from '../../src/onboarding/store';
+import { HAIRLINE } from '../../src/theme/tokens';
 import { Button } from '../../src/ui/Button';
 import { Dropdown } from '../../src/ui/Dropdown';
 import { AppText } from '../../src/ui/Text';
@@ -56,7 +57,7 @@ export default function MedsStep() {
 
 const styles = StyleSheet.create({
   med: { gap: 14 },
-  divider: { borderTopWidth: 1, borderTopColor: 'rgba(27, 22, 19, 0.08)', paddingTop: 14 },
+  divider: { borderTopWidth: 1, borderTopColor: HAIRLINE, paddingTop: 14 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   row: { flexDirection: 'row', gap: 10 },
   wide: { flex: 3 },

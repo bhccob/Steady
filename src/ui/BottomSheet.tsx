@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useReducedMotion } from '../lib/useReducedMotion';
-import { layout } from '../theme/tokens';
+import { HAIRLINE, layout } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Icon } from './Icon';
 import { AppText } from './Text';
@@ -86,6 +86,6 @@ const styles = StyleSheet.create({
   subtitle: { marginTop: 2 },
   body: { marginTop: 8 },
   row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
-  hairline: { borderBottomWidth: 1, borderBottomColor: 'rgba(27, 22, 19, 0.08)' },
+  hairline: { borderBottomWidth: 1, borderBottomColor: HAIRLINE },
   grow: { flex: 1 },
 });

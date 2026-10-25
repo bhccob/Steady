@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { StepLayout } from '../../src/onboarding/StepLayout';
 import { useOnboarding } from '../../src/onboarding/store';
+import { HAIRLINE } from '../../src/theme/tokens';
 import { Button } from '../../src/ui/Button';
 import { DayPicker } from '../../src/ui/DayPicker';
 import { AppText } from '../../src/ui/Text';
@@ -35,7 +36,7 @@ export default function ScheduleStep() {
 
 const styles = StyleSheet.create({
   med: { gap: 8 },
-  divider: { borderTopWidth: 1, borderTopColor: 'rgba(27, 22, 19, 0.08)', paddingTop: 14 },
+  divider: { borderTopWidth: 1, borderTopColor: HAIRLINE, paddingTop: 14 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   swatch: { width: 20, height: 20, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(27, 22, 19, 0.22)' },
 });

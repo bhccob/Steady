@@ -18,7 +18,7 @@ import { removeExportFiles, shareExport } from '../../src/settings/exportFile';
 import { scheduleSummary } from '../../src/settings/summary';
 import { useApp } from '../../src/state/app';
 import { LEVEL_NAMES } from '../../src/support/copy';
-import { layout } from '../../src/theme/tokens';
+import { HAIRLINE, layout } from '../../src/theme/tokens';
 import { useTheme } from '../../src/theme/useTheme';
 import { Background } from '../../src/ui/Background';
 import { BottomSheet } from '../../src/ui/BottomSheet';
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: layout.gutter },
   column: { width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', gap: 22 },
   section: { gap: 4 },
-  row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(27, 22, 19, 0.08)' },
+  row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: HAIRLINE },
   grow: { flex: 1 },
   value: { maxWidth: '55%', textAlign: 'right' },
   swatch: { width: 18, height: 18, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(27, 22, 19, 0.22)' },

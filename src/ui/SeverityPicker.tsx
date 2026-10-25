@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { Severity } from '../db/schema';
 import { SEVERITY_LABELS } from '../support/level';
+import { TRACK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { AppText } from './Text';
 
@@ -19,7 +20,7 @@ export function SeverityPicker({ name, value, onChange }: { name: string; value:
         <AppText tone="secondary">{SEVERITY_LABELS[value]}</AppText>
       </View>
       <View style={styles.track}>
-        <View style={[styles.line, { backgroundColor: 'rgba(27, 22, 19, 0.12)' }]} />
+        <View style={[styles.line, { backgroundColor: TRACK }]} />
         <View style={[styles.line, { backgroundColor: theme.accentLine, right: `${100 - value * 50}%` }]} />
         {STOPS.map((s) => {
           const on = s === value;
@@ -39,7 +40,7 @@ export function SeverityPicker({ name, value, onChange }: { name: string; value:
                     ? { backgroundColor: theme.accent, borderColor: theme.accentLine, borderBottomColor: theme.accentDeep }
                     : s < value
                       ? { backgroundColor: theme.accentLine, borderColor: theme.accentLine }
-                      : { backgroundColor: '#FFFFFF', borderColor: theme.text.secondary },
+                      : { backgroundColor: theme.background[0], borderColor: theme.text.secondary },
                 ]}
               />
             </Pressable>

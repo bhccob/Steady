@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { layout } from '../theme/tokens';
+import { layout, TRACK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Background } from '../ui/Background';
 import { Icon } from '../ui/Icon';
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   column: { width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', paddingHorizontal: layout.gutter },
   bar: { height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   barSide: { width: 56, height: layout.minTarget, justifyContent: 'center' },
-  progress: { flex: 1, height: 3, borderRadius: 99, overflow: 'hidden', backgroundColor: 'rgba(27, 22, 19, 0.1)' },
+  progress: { flex: 1, height: 3, borderRadius: 99, overflow: 'hidden', backgroundColor: TRACK },
   progressDone: { height: '100%', borderRadius: 99 },
   grow: { flex: 1 },
   content: { paddingTop: 16, paddingBottom: 24 },

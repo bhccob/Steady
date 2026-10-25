@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import type { SupportLevel } from '../db/schema';
+import { HAIRLINE, TRACK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Icon } from '../ui/Icon';
 import { Segmented } from '../ui/Segmented';
@@ -18,7 +19,7 @@ export function LevelPanel({ level, suggested, onChange }: { level: SupportLevel
         <AppText variant="title">{LEVEL_NAMES[level]}</AppText>
         <View style={styles.meter} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {[12, 17, 22].map((h, i) => (
-            <View key={h} style={[styles.bar, { height: h, backgroundColor: i <= ORDER.indexOf(level) ? theme.accentLine : 'rgba(27, 22, 19, 0.14)' }]} />
+            <View key={h} style={[styles.bar, { height: h, backgroundColor: i <= ORDER.indexOf(level) ? theme.accentLine : TRACK }]} />
           ))}
         </View>
         <AppText variant="caption" tone="secondary" style={styles.auto}>
@@ -46,7 +47,7 @@ const styles = StyleSheet.create({
   meter: { flexDirection: 'row', alignItems: 'flex-end', gap: 5 },
   bar: { width: 8, borderRadius: 3 },
   auto: { marginLeft: 'auto' },
-  rule: { flexDirection: 'row', gap: 12, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: 'rgba(27, 22, 19, 0.08)' },
+  rule: { flexDirection: 'row', gap: 12, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: HAIRLINE },
   last: { borderBottomWidth: 0 },
   grow: { flex: 1 },
 });

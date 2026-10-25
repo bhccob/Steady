@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { layout } from '../theme/tokens';
+import { HAIRLINE, layout } from '../theme/tokens';
 import { CheckRow } from '../ui/CheckRow';
 import { Icon } from '../ui/Icon';
 import { AppText } from '../ui/Text';
@@ -65,6 +65,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(27, 22, 19, 0.08)',
+    borderBottomColor: HAIRLINE,
   },
 });

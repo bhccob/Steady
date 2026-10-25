@@ -15,7 +15,7 @@ import type { DraftGuardian } from '../../src/onboarding/draft';
 import { guardianButton } from '../../src/onboarding/guardianStep';
 import { CHANNELS, CONTACT_FIELD, RELATIONSHIPS } from '../../src/onboarding/options';
 import { useApp } from '../../src/state/app';
-import { DECOR_FONT_SCALE, layout } from '../../src/theme/tokens';
+import { DECOR_FONT_SCALE, HAIRLINE, layout } from '../../src/theme/tokens';
 import { useTheme } from '../../src/theme/useTheme';
 import { Background } from '../../src/ui/Background';
 import { BottomSheet } from '../../src/ui/BottomSheet';
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   column: { width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', gap: 18 },
   grow: { flex: 1 },
   empty: { paddingVertical: 8 },
-  person: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(27, 22, 19, 0.08)', gap: 4 },
+  person: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: HAIRLINE, gap: 4 },
   personTop: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   avatar: { width: 44, height: 44, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   crisis: { padding: 16, gap: 12 },
   crisisTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   call: { minHeight: 48, paddingHorizontal: 18, borderRadius: 999, borderBottomWidth: 4, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  lineRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(27, 22, 19, 0.08)' },
+  lineRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: HAIRLINE },
   sheetBody: { gap: 12, marginTop: 8 },
   row: { flexDirection: 'row', gap: 10 },
   half: { flex: 1 },

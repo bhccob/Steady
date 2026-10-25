@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, StyleSheet, View } from 'react-native';
 
 import { useReducedMotion } from '../lib/useReducedMotion';
+import { TRACK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Glass } from '../ui/Glass';
 import { Icon } from '../ui/Icon';
@@ -112,7 +113,7 @@ export function PillCard({ next, nowMs, hasMeds, note, onMark }: PillCardProps) 
             <View style={styles.foot}>
               <View style={styles.grow}>
                 {lateMin > 0 ? (
-                  <View style={[styles.track, { backgroundColor: 'rgba(27, 22, 19, 0.1)' }]} accessibilityElementsHidden importantForAccessibility="no">
+                  <View style={[styles.track, { backgroundColor: TRACK }]} accessibilityElementsHidden importantForAccessibility="no">
                     <View style={[styles.fill, { width: `${Math.min(lateMin / BAR_CAP_MIN, 1) * 100}%`, backgroundColor: theme.accentLine }]} />
                   </View>
                 ) : null}

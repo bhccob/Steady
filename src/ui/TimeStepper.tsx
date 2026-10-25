@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { formatHm, stepMinutes } from '../lib/time';
-import { layout } from '../theme/tokens';
+import { HAIRLINE, layout } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Icon } from './Icon';
 import { AppText } from './Text';
@@ -48,7 +48,7 @@ export function TimeStepper({ label, value, onChange, step = 15, onRemove }: Tim
 }
 
 const styles = StyleSheet.create({
-  row: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(27, 22, 19, 0.08)' },
+  row: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 8, borderBottomWidth: 1, borderBottomColor: HAIRLINE },
   grow: { flex: 1 },
   round: { width: layout.minTarget, height: layout.minTarget, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   value: { minWidth: 64, textAlign: 'center', fontSize: 22 },

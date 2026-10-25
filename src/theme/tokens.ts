@@ -81,6 +81,14 @@ export const themes: Record<ThemeName, Theme> = {
   },
 };
 
+/**
+ * Neutral warm grey with alpha, so one value reads in both themes: a touch darker than the
+ * light background, a touch lighter than the dark one.
+ */
+export const HAIRLINE = 'rgba(128, 120, 110, 0.2)';
+/** Unfilled tracks: progress lines, meters, switches. */
+export const TRACK = 'rgba(128, 120, 110, 0.3)';
+
 export const radius = { card: 28, control: 16, pill: 999 } as const;
 
 /** Weights 400 and 600 only. */

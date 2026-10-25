@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { layout } from '../theme/tokens';
+import { HAIRLINE, layout } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Icon } from './Icon';
 import { AppText } from './Text';
@@ -14,7 +14,7 @@ export function CheckRow({ label, checked, onToggle }: { label: string; checked:
       accessibilityLabel={label}
       accessibilityState={{ checked }}
       onPress={onToggle}
-      style={[styles.row, { borderBottomColor: 'rgba(27, 22, 19, 0.08)' }]}
+      style={[styles.row, { borderBottomColor: HAIRLINE }]}
     >
       <AppText style={styles.grow}>{label}</AppText>
       <View

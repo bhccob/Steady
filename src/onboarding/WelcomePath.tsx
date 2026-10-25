@@ -21,7 +21,7 @@ export function WelcomePath() {
     k === 'done'
       ? { backgroundColor: theme.accent, borderBottomWidth: 10, borderBottomColor: theme.accentDeep }
       : k === 'today'
-        ? { backgroundColor: '#FFFFFF', borderWidth: 3, borderColor: theme.accentLine }
+        ? { backgroundColor: theme.background[0], borderWidth: 3, borderColor: theme.accentLine }
         : { backgroundColor: 'rgba(255, 255, 255, 0.7)', borderBottomWidth: 10, borderBottomColor: 'rgba(120, 120, 110, 0.2)' };
 
   return (

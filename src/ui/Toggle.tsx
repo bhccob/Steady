@@ -1,5 +1,6 @@
 import { StyleSheet, Switch, View } from 'react-native';
 
+import { HAIRLINE, TRACK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { AppText } from './Text';
 
@@ -20,15 +21,15 @@ export function Toggle({ label, hint, value, onChange }: { label: string; hint?:
         accessibilityLabel={label}
         value={value}
         onValueChange={onChange}
-        trackColor={{ true: theme.accentLine, false: 'rgba(27, 22, 19, 0.18)' }}
+        trackColor={{ true: theme.accentLine, false: TRACK }}
         thumbColor="#FFFFFF"
-        ios_backgroundColor="rgba(27, 22, 19, 0.18)"
+        ios_backgroundColor={TRACK}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(27, 22, 19, 0.08)' },
+  row: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: HAIRLINE },
   grow: { flex: 1 },
 });
