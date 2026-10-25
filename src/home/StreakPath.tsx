@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { useReducedMotion } from '../lib/useReducedMotion';
@@ -7,31 +7,36 @@ import { useTheme } from '../theme/useTheme';
 import { Icon } from '../ui/Icon';
 import { AppText } from '../ui/Text';
 import type { PathEntry } from './path';
+import { hitTest, PATH, project, sampleRange, zigzag, type Viewport } from './pathProjection';
 
-const STEP = 97;
-const ZIGZAG = [0, 26, 38, 26, 0, -26, -38, -26];
-/** Undo the plane's 60° tilt so labels stay readable. */
-const UPRIGHT = { transform: [{ scaleY: 1.9 }] };
+const SIDE = PATH.side3d;
+/** Finger travel before a touch counts as a drag rather than a tap. */
+const DRAG_SLOP = 6;
+/** How far the path moves per pixel of finger travel. */
+const DRAG_GAIN = 1.6;
 
+const sizeOf = (e: PathEntry | undefined) => (e?.kind === 'trophy' ? 68 : 60);
+
+/** Fill, ring and the thickness of the block's lower side. */
 function tileStyle(e: PathEntry, t: Theme): ViewStyle {
   const dark = t.name === 'dark';
   if (e.kind === 'trophy') {
-    if (e.state === 'got') return { backgroundColor: t.accentDeep, borderBottomWidth: 11, borderBottomColor: '#A8916A' };
+    if (e.state === 'got') return { backgroundColor: t.accentDeep, borderBottomWidth: SIDE, borderBottomColor: '#A8916A' };
     if (e.state === 'ready')
-      return { backgroundColor: t.accent, borderWidth: 4, borderColor: t.accentLine, borderBottomWidth: 11, borderBottomColor: t.accentDeep, boxShadow: '0px 0px 30px 10px rgba(232, 213, 181, 0.9)' };
+      return { backgroundColor: t.accent, borderWidth: 3, borderColor: t.accentLine, borderBottomWidth: SIDE, borderBottomColor: t.accentDeep, boxShadow: '0px 0px 26px 8px rgba(232, 213, 181, 0.9)' };
     return { backgroundColor: dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.55)', borderWidth: 2, borderColor: t.accentLine };
   }
   switch (e.state) {
     case 'done':
-      return { backgroundColor: t.accent, borderBottomWidth: 10, borderBottomColor: t.accentDeep, ...(e.isToday ? { borderWidth: 3, borderColor: t.accentLine } : null) };
+      return { backgroundColor: t.accent, borderBottomWidth: SIDE, borderBottomColor: t.accentDeep, ...(e.isToday ? { borderWidth: 2, borderColor: t.accentLine, borderBottomWidth: SIDE } : null) };
     case 'today':
-      return { backgroundColor: t.background[0], borderWidth: 4, borderColor: t.accentLine };
+      return { backgroundColor: t.background[0], borderWidth: 3, borderColor: t.accentLine };
     case 'rest':
-      return { backgroundColor: 'transparent', borderWidth: 4, borderColor: t.text.secondary };
+      return { backgroundColor: 'transparent', borderWidth: 3, borderColor: t.text.secondary };
     case 'past':
-      return { backgroundColor: dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.45)', borderBottomWidth: 10, borderBottomColor: 'rgba(120, 120, 110, 0.15)' };
+      return { backgroundColor: dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.45)', borderBottomWidth: SIDE, borderBottomColor: 'rgba(120, 120, 110, 0.15)' };
     default:
-      return { backgroundColor: dark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.75)', borderBottomWidth: 10, borderBottomColor: 'rgba(120, 120, 110, 0.2)' };
+      return { backgroundColor: dark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.75)', borderBottomWidth: SIDE, borderBottomColor: 'rgba(120, 120, 110, 0.2)' };
   }
 }
 
@@ -39,28 +44,28 @@ function Face({ e, t }: { e: PathEntry; t: Theme }) {
   const ink = e.kind === 'day' && e.state === 'done' ? t.onAccent : t.text.primary;
   if (e.kind === 'trophy') {
     return (
-      <View style={[styles.face, UPRIGHT]}>
-        <Icon name="award" size={22} color={t.onAccent} />
+      <>
+        <Icon name="award" size={18} color={t.onAccent} />
         <AppText maxFontSizeMultiplier={DECOR_FONT_SCALE} style={[styles.small, { color: t.onAccent }]}>
           {e.state === 'got' ? '+50' : e.state === 'ready' ? 'COLLECT' : 'WEEK'}
         </AppText>
-      </View>
+      </>
     );
   }
   const top = e.state === 'done' ? null : e.state === 'today' ? 'TODAY' : e.state === 'rest' ? 'REST' : e.weekday.toUpperCase();
   return (
-    <View style={[styles.face, UPRIGHT]}>
+    <>
       {top ? (
         <AppText maxFontSizeMultiplier={DECOR_FONT_SCALE} style={[styles.small, { color: ink }]}>
           {top}
         </AppText>
       ) : (
-        <Icon name="check" size={13} color={ink} />
+        <Icon name="check" size={11} color={ink} />
       )}
       <AppText maxFontSizeMultiplier={DECOR_FONT_SCALE} style={[styles.num, { color: ink }]}>
         {e.day}
       </AppText>
-    </View>
+    </>
   );
 }
 
@@ -79,21 +84,25 @@ interface StreakPathProps {
   onDragChange?: (dragging: boolean) => void;
 }
 
-/** The streak as blocks on a path tilted back in 3D. Drag down to look back; tap a block for that day. */
+/**
+ * The streak as blocks on a path that recedes into the distance. Drag down to look back;
+ * tap a block for that day. The 3D look is computed (see pathProjection.ts), so every block is
+ * a flat view: taps land where the block is drawn, and nothing is rotated in 3D.
+ */
 export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathProps) {
   const theme = useTheme();
   const reduced = useReducedMotion();
-  const height = entries.length * STEP + 220;
+  const [view, setView] = useState<Viewport | null>(null);
 
   // The latest props for the gesture handlers, which are made once.
-  const live = useRef({ onDragChange, reduced, max: (entries.length - 1) * STEP });
+  const live = useRef({ entries, onTap, onDragChange, reduced, view });
   useLayoutEffect(() => {
-    live.current = { onDragChange, reduced, max: (entries.length - 1) * STEP };
+    live.current = { entries, onTap, onDragChange, reduced, view };
   });
-  const base = useRef(focus * STEP);
-  const [shift] = useState(() => new Animated.Value(focus * STEP));
+  const base = useRef(focus * PATH.step);
+  const [shift] = useState(() => new Animated.Value(focus * PATH.step));
 
-  // The handlers read `live` and `base` only when a drag happens or focus changes, never while rendering.
+  // The handlers read `live` and `base` only when a touch happens or focus changes, never while rendering.
   // eslint-disable-next-line react-hooks/refs
   const [{ settle, pan }] = useState(() => {
     const move = (to: number) => {
@@ -101,17 +110,41 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
       if (live.current.reduced) shift.setValue(to);
       else Animated.spring(shift, { toValue: to, useNativeDriver: true, ...motion.spring }).start();
     };
-    const clamp = (v: number) => Math.max(0, Math.min(live.current.max, v));
+    const clamp = (v: number) => Math.max(0, Math.min((live.current.entries.length - 1) * PATH.step, v));
+    let dragging = false;
     const responder = PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 8 && Math.abs(g.dy) > Math.abs(g.dx),
-      onPanResponderGrant: () => live.current.onDragChange?.(true),
+      // Take the touch at once, so the page's scrolling can't claim it first on Android.
+      onStartShouldSetPanResponder: () => true,
       onPanResponderTerminationRequest: () => false,
-      onPanResponderMove: (_, g) => shift.setValue(clamp(base.current - g.dy * 1.6)),
-      onPanResponderRelease: (_, g) => {
+      onPanResponderGrant: () => {
+        dragging = false;
+      },
+      onPanResponderMove: (_, g) => {
+        if (!dragging && Math.abs(g.dx) < DRAG_SLOP && Math.abs(g.dy) < DRAG_SLOP) return;
+        if (!dragging) {
+          dragging = true;
+          live.current.onDragChange?.(true);
+        }
+        shift.setValue(clamp(base.current - g.dy * DRAG_GAIN));
+      },
+      onPanResponderRelease: (e, g) => {
+        if (!dragging) {
+          const { view: v, entries: list } = live.current;
+          if (!v) return;
+          const i = hitTest(
+            { x: e.nativeEvent.locationX, y: e.nativeEvent.locationY },
+            { position: base.current / PATH.step, count: list.length, sizeOf: (k) => sizeOf(list[k]), view: v },
+          );
+          if (i !== null) live.current.onTap(i);
+          return;
+        }
+        dragging = false;
         live.current.onDragChange?.(false);
-        move(Math.round(clamp(base.current - g.dy * 1.6) / STEP) * STEP);
+        move(Math.round(clamp(base.current - g.dy * DRAG_GAIN) / PATH.step) * PATH.step);
       },
       onPanResponderTerminate: () => {
+        if (!dragging) return;
+        dragging = false;
         live.current.onDragChange?.(false);
         move(base.current);
       },
@@ -120,49 +153,72 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
   });
 
   useEffect(() => {
-    settle(focus * STEP);
+    settle(focus * PATH.step);
   }, [focus, reduced, settle]);
 
+  // One set of native-driver interpolations per block: where it sits, how big, how faded.
+  const shape = entries.map((e) => e.kind).join(',');
+  const motionStyles = useMemo(() => {
+    if (!view) return [];
+    const samples = sampleRange();
+    return shape.split(',').map((kind, i) => {
+      const size = kind === 'trophy' ? 68 : 60;
+      const faceH = size * PATH.faceRatio;
+      const points = samples.map((rel) => project(rel, zigzag(i), view));
+      const rel = Animated.subtract(i * PATH.step, shift);
+      const along = (out: number[]) => rel.interpolate({ inputRange: samples, outputRange: out, extrapolate: 'clamp' });
+      return {
+        width: size,
+        height: faceH + SIDE,
+        opacity: along(points.map((p) => p.opacity)),
+        transformOrigin: [size / 2, faceH / 2, 0],
+        transform: [
+          { translateX: along(points.map((p) => p.x - size / 2)) },
+          { translateY: along(points.map((p) => p.y - faceH / 2)) },
+          { scale: along(points.map((p) => p.scale)) },
+        ],
+      };
+    });
+  }, [shape, view, shift]);
+
   return (
-    <View style={StyleSheet.absoluteFill} {...pan.panHandlers}>
-      <Animated.View
-        style={[
-          styles.plane,
-          { height, transform: [{ perspective: 520 }, { rotateX: '60deg' }, { translateY: shift }] },
-        ]}
-      >
-        {entries.map((e, i) => {
-          const size = e.kind === 'trophy' ? 68 : 60;
-          return (
-            <Pressable
-              key={e.kind === 'day' ? e.date : `trophy-${e.weekStart}`}
-              accessibilityRole="button"
-              accessibilityLabel={a11yLabel(e)}
-              accessibilityHint="Shows that day"
-              onPress={() => onTap(i)}
-              style={[
-                styles.tile,
-                { width: size, height: size, marginLeft: -size / 2 + ZIGZAG[i % ZIGZAG.length]!, top: height - 140 - i * STEP, borderRadius: e.kind === 'trophy' ? 22 : 18 },
-                tileStyle(e, theme),
-              ]}
-            >
-              <Face e={e} t={theme} />
-            </Pressable>
-          );
-        })}
-      </Animated.View>
-      <View pointerEvents="none" style={[styles.fadeTop, { backgroundImage: `linear-gradient(to bottom, ${theme.background[0]} 10%, transparent)` }]} />
-      <View pointerEvents="none" style={[styles.fadeBottom, { backgroundImage: `linear-gradient(to top, ${theme.background[1]}, transparent)` }]} />
+    <View
+      style={StyleSheet.absoluteFill}
+      onLayout={(e) => setView({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}
+      {...pan.panHandlers}
+    >
+      {view
+        ? // Draw far blocks first so nearer ones sit on top.
+          entries
+            .map((e, i) => ({ e, i }))
+            .reverse()
+            .map(({ e, i }) => {
+              const style = motionStyles[i];
+              if (!style) return null;
+              const size = sizeOf(e);
+              return (
+                <Animated.View key={e.kind === 'day' ? e.date : `trophy-${e.weekStart}`} pointerEvents="none" style={[styles.tile, style]}>
+                  {/* Touches go to the path's own handler; this stays for screen readers. */}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={a11yLabel(e)}
+                    accessibilityHint="Shows that day"
+                    onPress={() => onTap(i)}
+                    style={[styles.face, { width: size, height: size * PATH.faceRatio + SIDE, borderRadius: e.kind === 'trophy' ? 20 : 16 }, tileStyle(e, theme)]}
+                  >
+                    <Face e={e} t={theme} />
+                  </Pressable>
+                </Animated.View>
+              );
+            })
+        : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  plane: { position: 'absolute', left: 0, right: 0, bottom: -30, transformOrigin: '50% 100%' },
-  tile: { position: 'absolute', left: '73%', alignItems: 'center', justifyContent: 'center' },
-  face: { alignItems: 'center', gap: 2 },
-  small: { fontSize: 9, lineHeight: 11, fontWeight: '600', letterSpacing: 0.2 },
-  num: { fontSize: 17, lineHeight: 20, fontWeight: '600' },
-  fadeTop: { position: 'absolute', left: 0, right: 0, top: 0, height: 110 },
-  fadeBottom: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 36 },
+  tile: { position: 'absolute', left: 0, top: 0 },
+  face: { alignItems: 'center', justifyContent: 'center', gap: 1 },
+  small: { fontSize: 9, lineHeight: 10, fontWeight: '600', letterSpacing: 0.2 },
+  num: { fontSize: 16, lineHeight: 18, fontWeight: '600' },
 });
