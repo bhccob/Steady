@@ -8,6 +8,7 @@ import type { Med } from '../db/dao/meds';
 import { shortDate } from '../lib/time';
 import { steadyScore } from '../scoring/score';
 import { classifyMark } from '../scoring/status';
+import { DECOR_FONT_SCALE } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { BottomSheet } from '../ui/BottomSheet';
 import { AppText } from '../ui/Text';
@@ -52,7 +53,7 @@ export function DaySheet({ entry, justCollected, doses, meds, today, nowMs, cloc
         {got ? (
           <View style={styles.trophy}>
             <View style={[styles.medal, { backgroundColor: theme.accent, borderBottomColor: theme.accentDeep }]}>
-              <AppText variant="heading" style={{ color: theme.onAccent }}>
+              <AppText variant="heading" maxFontSizeMultiplier={DECOR_FONT_SCALE} style={{ color: theme.onAccent }}>
                 +50
               </AppText>
             </View>

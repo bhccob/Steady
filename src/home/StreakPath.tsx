@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { useReducedMotion } from '../lib/useReducedMotion';
-import { motion, type Theme } from '../theme/tokens';
+import { DECOR_FONT_SCALE, motion, type Theme } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Icon } from '../ui/Icon';
 import { AppText } from '../ui/Text';
@@ -41,15 +41,25 @@ function Face({ e, t }: { e: PathEntry; t: Theme }) {
     return (
       <View style={[styles.face, UPRIGHT]}>
         <Icon name="award" size={22} color={t.onAccent} />
-        <AppText style={[styles.small, { color: t.onAccent }]}>{e.state === 'got' ? '+50' : e.state === 'ready' ? 'COLLECT' : 'WEEK'}</AppText>
+        <AppText maxFontSizeMultiplier={DECOR_FONT_SCALE} style={[styles.small, { color: t.onAccent }]}>
+          {e.state === 'got' ? '+50' : e.state === 'ready' ? 'COLLECT' : 'WEEK'}
+        </AppText>
       </View>
     );
   }
   const top = e.state === 'done' ? null : e.state === 'today' ? 'TODAY' : e.state === 'rest' ? 'REST' : e.weekday.toUpperCase();
   return (
     <View style={[styles.face, UPRIGHT]}>
-      {top ? <AppText style={[styles.small, { color: ink }]}>{top}</AppText> : <Icon name="check" size={13} color={ink} />}
-      <AppText style={[styles.num, { color: ink }]}>{e.day}</AppText>
+      {top ? (
+        <AppText maxFontSizeMultiplier={DECOR_FONT_SCALE} style={[styles.small, { color: ink }]}>
+          {top}
+        </AppText>
+      ) : (
+        <Icon name="check" size={13} color={ink} />
+      )}
+      <AppText maxFontSizeMultiplier={DECOR_FONT_SCALE} style={[styles.num, { color: ink }]}>
+        {e.day}
+      </AppText>
     </View>
   );
 }

@@ -67,5 +67,5 @@ const styles = StyleSheet.create({
   bar: { flex: 1, height: 60, borderRadius: 999, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: 6 },
   tab: { width: 52, height: 46, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   sos: { width: 54, height: 54, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  reach: { height: 46, paddingHorizontal: 16, borderRadius: 999, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  reach: { minHeight: 46, paddingHorizontal: 16, borderRadius: 999, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', gap: 8 },
 });

@@ -15,7 +15,7 @@ import type { DraftGuardian } from '../../src/onboarding/draft';
 import { guardianButton } from '../../src/onboarding/guardianStep';
 import { CHANNELS, CONTACT_FIELD, RELATIONSHIPS } from '../../src/onboarding/options';
 import { useApp } from '../../src/state/app';
-import { layout } from '../../src/theme/tokens';
+import { DECOR_FONT_SCALE, layout } from '../../src/theme/tokens';
 import { useTheme } from '../../src/theme/useTheme';
 import { Background } from '../../src/ui/Background';
 import { BottomSheet } from '../../src/ui/BottomSheet';
@@ -125,7 +125,9 @@ export default function GuardiansScreen() {
               <View key={g.id} style={styles.person}>
                 <View style={styles.personTop}>
                   <View style={[styles.avatar, { backgroundColor: theme.glass.overlay, borderColor: theme.glass.border }]}>
-                    <AppText variant="bodyStrong">{g.displayName.slice(0, 1).toUpperCase()}</AppText>
+                    <AppText variant="bodyStrong" maxFontSizeMultiplier={DECOR_FONT_SCALE} importantForAccessibility="no">
+                      {g.displayName.slice(0, 1).toUpperCase()}
+                    </AppText>
                   </View>
                   <View style={styles.grow}>
                     <AppText variant="bodyStrong">{g.displayName}</AppText>

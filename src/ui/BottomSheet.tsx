@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useReducedMotion } from '../lib/useReducedMotion';
 import { layout } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Icon } from './Icon';
@@ -19,8 +20,9 @@ interface BottomSheetProps {
 export function BottomSheet({ visible, onClose, title, subtitle, children }: BottomSheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const reduced = useReducedMotion();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+    <Modal visible={visible} transparent animationType={reduced ? 'fade' : 'slide'} onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.root}>
         <Pressable accessibilityLabel="Close" style={[StyleSheet.absoluteFill, styles.scrim]} onPress={onClose} />
         <View

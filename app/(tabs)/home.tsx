@@ -114,7 +114,9 @@ export default function HomeScreen() {
             <StreakPath entries={entries} focus={focus} onTap={onTap} onDragChange={(d) => setScrollEnabled(!d)} />
             <View pointerEvents="none" style={styles.heroText} accessible accessibilityLabel={summary}>
               <View style={styles.streakRow}>
-                <AppText style={styles.streak}>{streak}</AppText>
+                <AppText maxFontSizeMultiplier={1.2} style={styles.streak}>
+                  {streak}
+                </AppText>
                 <AppText variant="bodyStrong">day streak</AppText>
               </View>
               <AppText variant="caption" tone="secondary">

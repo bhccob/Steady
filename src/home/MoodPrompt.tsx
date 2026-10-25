@@ -4,6 +4,7 @@ import { Animated, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Mood } from '../db/schema';
+import { usePerf } from '../lib/perf';
 import { useReducedMotion } from '../lib/useReducedMotion';
 import { layout } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
@@ -31,6 +32,7 @@ interface MoodPromptProps {
 export function MoodPrompt({ visible, name, hour, onPick, onDismiss, onDone }: MoodPromptProps) {
   const theme = useTheme();
   const reduced = useReducedMotion();
+  const glassMode = usePerf((s) => s.glassMode);
   const insets = useSafeAreaInsets();
   const [picked, setPicked] = useState<Mood | null>(null);
   const [opacity] = useState(() => new Animated.Value(1));
@@ -59,7 +61,11 @@ export function MoodPrompt({ visible, name, hour, onPick, onDismiss, onDone }: M
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={() => { onDismiss(); close(null, 0); }} statusBarTranslucent>
       <Animated.View style={[styles.fill, { opacity }]}>
-        <BlurView intensity={18} tint={theme.name} style={StyleSheet.absoluteFill} />
+        {glassMode === 'blur' ? (
+          <BlurView intensity={18} tint={theme.name} style={StyleSheet.absoluteFill} />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.glass.solid }]} />
+        )}
         <View style={[StyleSheet.absoluteFill, { backgroundImage: `linear-gradient(to bottom, transparent, ${theme.glass.solid} 45%, ${theme.background[1]})` }]} />
         <View style={[styles.content, { paddingBottom: insets.bottom + 28 }]} accessibilityViewIsModal>
           <View style={styles.text}>

@@ -54,6 +54,6 @@ export function DayPicker({ days, onChange }: { days: readonly number[]; onChang
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
   days: { flexDirection: 'row', gap: 4, marginTop: 4 },
-  day: { flex: 1, maxWidth: 48, height: 44, borderRadius: 999, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  day: { flex: 1, maxWidth: 48, minHeight: 44, borderRadius: 999, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   dayText: { fontSize: 14 },
 });

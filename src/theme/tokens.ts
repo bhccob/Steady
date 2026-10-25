@@ -96,6 +96,11 @@ export const typeScale = {
 
 /** Dynamic Type ceiling: 200%. */
 export const MAX_FONT_SCALE = 2;
+/**
+ * For decorative text inside a fixed shape (path tiles, medals, chart labels). Each of these has
+ * a full spoken label, and the same information appears in scaled text nearby.
+ */
+export const DECOR_FONT_SCALE = 1.3;
 
 export const layout = {
   maxContentWidth: 560,

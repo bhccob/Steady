@@ -6,6 +6,7 @@ import type { HistoryData } from '../calendar/useHistory';
 import { shortDate } from '../lib/time';
 import { totalPoints } from '../rewards/trophies';
 import { totalDaysMarked } from '../scoring/streak';
+import { DECOR_FONT_SCALE } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Icon, type IconName } from '../ui/Icon';
 import { AppText } from '../ui/Text';
@@ -84,8 +85,10 @@ function Donut({ b }: { b: Breakdown }) {
           </G>
         </Svg>
         <View style={styles.donutCenter} pointerEvents="none">
-          <AppText variant="heading">{b.percentMarked}%</AppText>
-          <AppText variant="caption" tone="secondary">
+          <AppText variant="heading" maxFontSizeMultiplier={DECOR_FONT_SCALE}>
+            {b.percentMarked}%
+          </AppText>
+          <AppText variant="caption" tone="secondary" maxFontSizeMultiplier={DECOR_FONT_SCALE}>
             marked
           </AppText>
         </View>
@@ -223,10 +226,10 @@ function ScoreLine({ series }: { series: { date: string; score: number }[] }) {
             <Circle cx={px} cy={py} r={5} fill={t.chart.steps[0]} stroke={t.background[0]} strokeWidth={2} />
           </Svg>
         ) : null}
-        <AppText variant="caption" tone="secondary" style={[styles.tick, { top: y(100) - 16 }]}>
+        <AppText variant="caption" tone="secondary" maxFontSizeMultiplier={DECOR_FONT_SCALE} style={[styles.tick, { top: y(100) - 16 }]}>
           100
         </AppText>
-        <AppText variant="caption" tone="secondary" style={[styles.tick, { top: y(min) - 16 }]}>
+        <AppText variant="caption" tone="secondary" maxFontSizeMultiplier={DECOR_FONT_SCALE} style={[styles.tick, { top: y(min) - 16 }]}>
           {min}
         </AppText>
       </Pressable>
@@ -277,7 +280,7 @@ function Rhythm({ offsets, range }: { offsets: number[]; range: { from: number; 
       <View style={[styles.rhythmTicks, { width: w }]}>
         {w > 0
           ? RHYTHM_TICKS.map(([m, label]) => (
-              <AppText key={m} variant="caption" tone="secondary" style={[styles.rhythmTick, { left: x(m) - 32 }]}>
+              <AppText key={m} variant="caption" tone="secondary" maxFontSizeMultiplier={DECOR_FONT_SCALE} style={[styles.rhythmTick, { left: x(m) - 32 }]}>
                 {label}
               </AppText>
             ))
@@ -419,7 +422,7 @@ const styles = StyleSheet.create({
   readout: { marginTop: 8 },
   tick: { position: 'absolute', right: 8, fontSize: 11 },
   axisRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8 },
-  rhythmTicks: { height: 18 },
+  rhythmTicks: { height: 22 },
   rhythmTick: { position: 'absolute', width: 64, textAlign: 'center', fontSize: 11 },
   moodRow: { flexDirection: 'row', justifyContent: 'space-between' },
   moodCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: 6, minHeight: 64 },

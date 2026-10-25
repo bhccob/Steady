@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row' },
   letter: { flex: 1, textAlign: 'center', paddingBottom: 4 },
   cell: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  num: { width: 26, height: 26, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  num: { minWidth: 26, minHeight: 26, paddingHorizontal: 3, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   numText: { fontSize: 14, lineHeight: 18 },
   legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 10 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
