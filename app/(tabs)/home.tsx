@@ -9,6 +9,7 @@ import { eveningCheckinDue } from '../../src/home/evening';
 import { MoodPrompt } from '../../src/home/MoodPrompt';
 import { buildPath, indexOfToday, type PathEntry } from '../../src/home/path';
 import { BedtimeCard } from '../../src/home/BedtimeCard';
+import { ComebackGlow } from '../../src/home/ComebackGlow';
 import { RecapCard } from '../../src/home/RecapCard';
 import { SteadyHandCard } from '../../src/home/SteadyHandCard';
 import { messageUrl, openUrl } from '../../src/lib/contact';
@@ -52,6 +53,7 @@ export default function HomeScreen() {
   const [eveningHandled, setEveningHandled] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const [note, setNote] = useState<string | undefined>();
+  const [comebacks, setComebacks] = useState(0);
   const offerHelp = useRef<Promise<boolean>>(Promise.resolve(false));
 
   useEffect(() => {
@@ -112,7 +114,10 @@ export default function HomeScreen() {
 
   const onMark = async (doseId: string) => {
     const outcome = await mark(doseId);
-    if (outcome?.comeback) setNote('there you are.');
+    if (outcome?.comeback) {
+      setNote('there you are.');
+      setComebacks((n) => n + 1);
+    }
   };
 
   const onTap = async (i: number) => {
@@ -143,6 +148,7 @@ export default function HomeScreen() {
 
           <View style={styles.hero}>
             <StreakPath entries={entries} focus={focus} onTap={onTap} onDragChange={(d) => setScrollEnabled(!d)} />
+            <ComebackGlow play={comebacks} />
             <View pointerEvents="none" style={styles.heroText} accessible accessibilityLabel={summary}>
               <View style={styles.streakRow}>
                 <AppText maxFontSizeMultiplier={1.2} style={styles.streak}>
