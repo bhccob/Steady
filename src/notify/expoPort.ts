@@ -17,6 +17,7 @@ import {
 } from '../lib/notifications';
 import { ACTIONS } from './actions';
 import { ACTION_LABELS } from './copy';
+import { handlesButtonsInBackground } from './platform';
 import { syncNotifications, type NotificationPort } from './scheduler';
 
 const CHANNEL = 'reminders';
@@ -53,23 +54,26 @@ export const expoPort: NotificationPort = {
 };
 
 /**
- * Registers how reminders look and which buttons they carry. "Taken" and "Goodnight" open the
- * app so they always register: a button that leaves a fully closed app closed is never
- * delivered to it. Snooze and "15 more min" stay in the background; if they're lost, the next
- * reminder simply comes on its usual schedule.
+ * Registers how reminders look and which buttons they carry. On Android development and store
+ * builds every button is handled in the background (backgroundTask.ts): marking from the lock
+ * screen without opening Steady. Elsewhere "Taken" and "Goodnight" open the app so they always
+ * register, because a button that leaves a fully closed app closed is never delivered to it.
+ * Snooze and "15 more min" always stay in the background; if one is lost, the next reminder
+ * simply comes on its usual schedule.
  */
 export async function setupNotifications(): Promise<void> {
+  const opensApp = !handlesButtonsInBackground();
   setNotificationHandler({
     handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
   });
   if (Platform.OS === 'android') {
     await setNotificationChannelAsync(CHANNEL, { name: 'Reminders', importance: AndroidImportance.HIGH, vibrationPattern: [0, 200] });
   }
-  const taken = { identifier: ACTIONS.taken, buttonTitle: ACTION_LABELS.taken, options: { opensAppToForeground: true } };
+  const taken = { identifier: ACTIONS.taken, buttonTitle: ACTION_LABELS.taken, options: { opensAppToForeground: opensApp } };
   await setNotificationCategoryAsync('dose', [taken, { identifier: ACTIONS.snooze, buttonTitle: ACTION_LABELS.snooze, options: { opensAppToForeground: false } }]);
   await setNotificationCategoryAsync('dose_final', [taken]);
   await setNotificationCategoryAsync('bedtime', [
-    { identifier: ACTIONS.goodnight, buttonTitle: ACTION_LABELS.goodnight, options: { opensAppToForeground: true } },
+    { identifier: ACTIONS.goodnight, buttonTitle: ACTION_LABELS.goodnight, options: { opensAppToForeground: opensApp } },
     { identifier: ACTIONS.later, buttonTitle: ACTION_LABELS.later, options: { opensAppToForeground: false } },
   ]);
 }

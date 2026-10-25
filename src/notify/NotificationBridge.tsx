@@ -5,6 +5,7 @@ import { addNotificationResponseReceivedListener, clearLastNotificationResponseA
 import { useApp } from '../state/app';
 import { handleResponse } from './actions';
 import { expoPort, setupNotifications } from './expoPort';
+import { handlesButtonsInBackground } from './platform';
 
 /**
  * Sets up reminders and handles their buttons, including one tapped while the app was closed.
@@ -21,6 +22,11 @@ export function NotificationBridge() {
 
     setupNotifications()
       .then(async () => {
+        if (handlesButtonsInBackground()) {
+          // Loaded lazily: Expo Go has no background task support for notifications.
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          await (require('./backgroundTask') as typeof import('./backgroundTask')).registerNotificationTask();
+        }
         const last = await getLastNotificationResponseAsync();
         if (!last) return;
         await clearLastNotificationResponseAsync();

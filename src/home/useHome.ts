@@ -22,6 +22,7 @@ import { steadyHandDue, windowsFor, type Window } from '../patterns/windows';
 import { weekStartOf } from '../rewards/trophies';
 import { useApp } from '../state/app';
 import { LEVEL_RULES } from '../support/level';
+import { refreshWidget } from '../widget/refresh';
 import { bedtimeCard, type BedtimeCard } from './bedtime';
 import { shouldOfferHelp } from './help';
 import { markDose, type MarkOutcome } from './markDose';
@@ -160,6 +161,7 @@ export function useHome() {
       steadyHand,
       recap,
     });
+    refreshWidget(db).catch(() => {});
   }, [db, setSupportLevel]);
 
   useFocusEffect(
