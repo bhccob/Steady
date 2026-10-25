@@ -6,6 +6,7 @@ import type { Mood } from '../../src/db/schema';
 import { DaySheet } from '../../src/home/DaySheet';
 import { MoodPrompt } from '../../src/home/MoodPrompt';
 import { buildPath, indexOfToday, type PathEntry } from '../../src/home/path';
+import { BedtimeCard } from '../../src/home/BedtimeCard';
 import { PillCard, type NextDose } from '../../src/home/PillCard';
 import { StreakPath } from '../../src/home/StreakPath';
 import { useHome } from '../../src/home/useHome';
@@ -24,7 +25,7 @@ import { AppText } from '../../src/ui/Text';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { data, reload, mark, pickMood, dismissMood, collect } = useHome();
+  const { data, reload, mark, pickMood, dismissMood, collect, goodnight, moreTime, noteHelpOffered } = useHome();
   const openHelp = useApp((s) => s.openHelp);
   const [sheet, setSheet] = useState<{ entry: PathEntry; justCollected: boolean } | null>(null);
   const [moodHandled, setMoodHandled] = useState(false);
@@ -37,6 +38,16 @@ export default function HomeScreen() {
     const t = setTimeout(() => setNote(undefined), 5000);
     return () => clearTimeout(t);
   }, [note]);
+
+  // At Steady and Close, a dose left open gently offers the help sheet once a day, after the mood question.
+  const moodShowing = !!data && !data.checkinToday && !data.moodDismissed && !moodHandled;
+  const helpShownFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!data?.helpDue || moodShowing || helpShownFor.current === data.today || useApp.getState().help) return;
+    helpShownFor.current = data.today;
+    openHelp('overdue');
+    noteHelpOffered();
+  }, [data, moodShowing, openHelp, noteHelpOffered]);
 
   if (!data) return <Background />;
 
@@ -119,6 +130,8 @@ export default function HomeScreen() {
             </View>
           </View>
 
+          {data.bedtime ? <BedtimeCard kind={data.bedtime} onGoodnight={goodnight} onMoreTime={moreTime} /> : null}
+
           <PillCard next={next} nowMs={nowMs} hasMeds={data.meds.size > 0} note={note} onMark={onMark} />
 
           {others.map((d) => {
@@ -137,7 +150,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       <MoodPrompt
-        visible={!data.checkinToday && !data.moodDismissed && !moodHandled}
+        visible={moodShowing}
         name={profile.displayName}
         hour={Math.floor(data.nowMinutes / 60)}
         onPick={(m: Mood) => {

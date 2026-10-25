@@ -28,14 +28,17 @@ export function HelpSheet() {
   const line = crisisLineFor(crisisRegion, getLocales()[0]?.regionCode);
   const lines = line ? [line] : ALL_CRISIS_LINES;
   const rough = help === 'rough';
+  // Rough check-ins and open doses offer the sheet unasked, so they also get a way to say "I'm okay".
+  const offered = help === 'rough' || help === 'overdue';
+  const title = rough ? 'Thanks for telling us.' : help === 'overdue' ? 'Checking in.' : 'Reach out';
+  const subtitle = rough
+    ? 'Want someone close right now?'
+    : help === 'overdue'
+      ? 'No pressure about the dose. If today feels heavy, these are here.'
+      : "You don't have to do this alone.";
 
   return (
-    <BottomSheet
-      visible={help !== null}
-      onClose={closeHelp}
-      title={rough ? 'Thanks for telling us.' : 'Reach out'}
-      subtitle={rough ? 'Want someone close right now?' : "You don't have to do this alone."}
-    >
+    <BottomSheet visible={help !== null} onClose={closeHelp} title={title} subtitle={subtitle}>
       {guardians.map((g) => {
         if (!g.consentedAt || !g.contact) {
           return <SheetRow key={g.id} icon="user" label={g.displayName} hint="Invite pending, can't reach them yet" />;
@@ -62,10 +65,10 @@ export function HelpSheet() {
           label={`Crisis line · ${l.number}`}
           hint={`free · 24/7 · ${l.country}`}
           onPress={() => openUrl(callUrl(l.number))}
-          last={!rough && i === lines.length - 1}
+          last={!offered && i === lines.length - 1}
         />
       ))}
-      {rough ? <SheetRow icon="smile" label="I'm okay for now" onPress={closeHelp} last /> : null}
+      {offered ? <SheetRow icon="smile" label="I'm okay for now" onPress={closeHelp} last /> : null}
     </BottomSheet>
   );
 }
