@@ -163,7 +163,12 @@ export default function HomeScreen() {
         }}
         onDone={async (m) => {
           setMoodHandled(true);
-          if (m === 'rough' && (await offerHelp.current)) openHelp('rough');
+          if (m === 'rough' && (await offerHelp.current)) {
+            // Counts as today's offer, so the overdue sheet doesn't follow right after.
+            helpShownFor.current = data.today;
+            openHelp('rough');
+            noteHelpOffered();
+          }
           reload();
         }}
       />
