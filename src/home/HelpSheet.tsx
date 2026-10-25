@@ -1,4 +1,5 @@
 import { getLocales } from 'expo-localization';
+import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 
@@ -19,6 +20,7 @@ export function HelpSheet() {
   const help = useApp((s) => s.help);
   const closeHelp = useApp((s) => s.closeHelp);
   const crisisRegion = useApp((s) => s.crisisRegion);
+  const router = useRouter();
   const [guardians, setGuardians] = useState<Guardian[]>([]);
 
   useEffect(() => {
@@ -58,6 +60,15 @@ export function HelpSheet() {
           ) : null,
         ];
       })}
+      <SheetRow
+        icon="wind"
+        label="Breathe for a minute"
+        hint="A slow 4-7-8 breath, three times"
+        onPress={() => {
+          closeHelp();
+          router.push('/breathe');
+        }}
+      />
       {lines.map((l, i) => (
         <SheetRow
           key={l.country}

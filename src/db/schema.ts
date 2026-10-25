@@ -23,6 +23,7 @@ export const TABLES = [
   'support_conditions',
   'trophies',
   'evening_checkins',
+  'harder_times',
 ] as const;
 export type TableName = (typeof TABLES)[number];
 
@@ -177,6 +178,17 @@ CREATE TABLE evening_checkins (
   id TEXT PRIMARY KEY,
   date_local TEXT NOT NULL UNIQUE,
   mood TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+`;
+
+/** "My harder times" (spec §6.2a): up to three, each on some weekdays (empty = every day). */
+export const SCHEMA_V7 = `
+CREATE TABLE harder_times (
+  id TEXT PRIMARY KEY,
+  days_json TEXT NOT NULL,
+  start_min INTEGER NOT NULL CHECK (start_min BETWEEN 0 AND 1440),
+  end_min INTEGER NOT NULL CHECK (end_min BETWEEN 0 AND 1440),
   created_at TEXT NOT NULL
 );
 `;

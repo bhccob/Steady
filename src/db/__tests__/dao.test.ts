@@ -3,6 +3,7 @@ import { awardBadge } from '../dao/badges';
 import { getCheckin, getEveningCheckin, listCheckins, upsertCheckin, upsertEveningCheckin } from '../dao/checkins';
 import { getDose, insertPendingDose, listDosesBetween, lockExpiredDoses, setDoseStatus } from '../dao/doses';
 import { eventsSince, hasEventForDate, lastEventAt, latestEventTime, listEvents, logEvent } from '../dao/events';
+import { listHarderTimes, replaceHarderTimes } from '../dao/harderTimes';
 import { collectTrophy, listTrophies } from '../dao/trophies';
 import { insertGuardian, listGuardians, markGuardianAgreed, revokeGuardian } from '../dao/guardians';
 import { deleteMed, insertMed, listMeds } from '../dao/meds';
@@ -30,7 +31,7 @@ describe('migrate', () => {
       .map((r) => r.name)
       .sort();
     expect(names).toEqual(
-      ['badges', 'checkins', 'doses', 'evening_checkins', 'events', 'guardians', 'meds', 'profile', 'schedules', 'support_conditions', 'trophies'],
+      ['badges', 'checkins', 'doses', 'evening_checkins', 'events', 'guardians', 'harder_times', 'meds', 'profile', 'schedules', 'support_conditions', 'trophies'],
     );
     expect([...TABLES].sort()).toEqual(names);
   });
@@ -214,6 +215,27 @@ describe('timed events', () => {
     await logEvent(db, 'goodnight', { at: '2026-10-25T23:10:00.000Z' });
     await logEvent(db, 'goodnight', { at: '2026-10-24T23:00:00.000Z' });
     expect(await latestEventTime(db, 'goodnight')).toBe('2026-10-25T23:10:00.000Z');
+  });
+});
+
+describe('harder times', () => {
+  it('saves up to three, replacing the old ones', async () => {
+    const db = await freshDb();
+    await replaceHarderTimes(db, [{ days: [0, 6], startMin: 1200, endMin: 1320 }]);
+    await replaceHarderTimes(db, [
+      { days: [], startMin: 600, endMin: 660 },
+      { days: [5], startMin: 1260, endMin: 1380 },
+    ]);
+    expect(await listHarderTimes(db)).toEqual([
+      { days: [], startMin: 600, endMin: 660 },
+      { days: [5], startMin: 1260, endMin: 1380 },
+    ]);
+  });
+
+  it('refuses more than three', async () => {
+    const db = await freshDb();
+    const four = Array.from({ length: 4 }, (_, i) => ({ days: [], startMin: i * 60, endMin: i * 60 + 30 }));
+    await expect(replaceHarderTimes(db, four)).rejects.toThrow();
   });
 });
 
