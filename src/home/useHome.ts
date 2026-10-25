@@ -3,18 +3,23 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
-import { getCheckin, getEveningCheckin, upsertCheckin, upsertEveningCheckin, type Checkin } from '../db/dao/checkins';
+import { getCheckin, getEveningCheckin, listCheckins, upsertCheckin, upsertEveningCheckin, type Checkin } from '../db/dao/checkins';
 import { listDosesBetween, type Dose } from '../db/dao/doses';
-import { hasEventForDate, latestEventTime, logEvent } from '../db/dao/events';
+import { eventsSince, hasEventForDate, latestEventTime, logEvent } from '../db/dao/events';
+import { listGuardians, type Guardian } from '../db/dao/guardians';
+import { listHarderTimes } from '../db/dao/harderTimes';
 import { listMeds, type Med } from '../db/dao/meds';
 import { getProfile, type Profile } from '../db/dao/profile';
 import { collectTrophy, listTrophies, type CollectedTrophy } from '../db/dao/trophies';
 import type { Mood } from '../db/schema';
+import type { Db } from '../db/types';
 import { reconcileDoses } from '../doses/reconcile';
 import { celebrateHaptic, lightHaptic, markHaptic } from '../lib/haptics';
-import { addDays, MINUTE_MS, type LocalDate } from '../lib/time';
-import { localDateIn, localMinutesIn } from '../lib/tz';
+import { addDays, DAY_MS, inQuietHours, MINUTE_MS, type LocalDate } from '../lib/time';
+import { localDateIn, localMinutesIn, zonedTimeToUtc } from '../lib/tz';
 import { expoPort, syncSoon } from '../notify/expoPort';
+import { steadyHandDue, windowsFor, type Window } from '../patterns/windows';
+import { weekStartOf } from '../rewards/trophies';
 import { useApp } from '../state/app';
 import { LEVEL_RULES } from '../support/level';
 import { bedtimeCard, type BedtimeCard } from './bedtime';
@@ -22,6 +27,53 @@ import { shouldOfferHelp } from './help';
 import { markDose, type MarkOutcome } from './markDose';
 
 const REFRESH_MS = 5 * MINUTE_MS;
+const LONG_OVERDUE_MS = 120 * MINUTE_MS;
+
+/** Everything the Steady Hand rules need, read from the database (spec §6). */
+async function loadSteadyHand(db: Db, input: { profile: Profile; today: LocalDate; now: Date; doses: Dose[] }): Promise<HomeData['steadyHand']> {
+  const { profile, today, now, doses } = input;
+  const tz = profile.timezone;
+  const nowMs = now.getTime();
+  const open = doses
+    .filter((d) => d.dueLocalDate === today && d.status === 'pending' && Date.parse(d.dueAtUtc) <= nowMs)
+    .sort((a, b) => (a.dueAtUtc < b.dueAtUtc ? -1 : 1));
+  const oldest = open[0];
+  if (!oldest) return null;
+
+  const roughMoods = (await listCheckins(db))
+    .filter((c) => c.mood === 'rough')
+    .map((c) => ({ date: c.dateLocal, minutes: localMinutesIn(new Date(c.createdAt), tz) }));
+  const windows = windowsFor({
+    date: today,
+    today,
+    firstDay: localDateIn(new Date(profile.createdAt), tz),
+    timezone: tz,
+    harderTimes: await listHarderTimes(db),
+    roughMoods,
+    doses,
+  });
+  const lastMark = doses.reduce((max, d) => (d.takenAtUtc && d.takenAtUtc > max ? d.takenAtUtc : max), '');
+  const dayAgo = new Date(nowMs - DAY_MS).toISOString();
+  const shownToday = new Set(
+    ((await eventsSince(db, 'steady_hand_shown', dayAgo)) as { date: string; key: string }[]).filter((e) => e.date === today).map((e) => e.key),
+  );
+  const weekStart = zonedTimeToUtc(weekStartOf(today), '00:00', tz);
+  const nowMinutes = localMinutesIn(now, tz);
+
+  const window = steadyHandDue({
+    enabled: profile.cravingWindowsEnabled,
+    windows,
+    nowMinutes,
+    overdueMin: (nowMs - Date.parse(oldest.dueAtUtc)) / MINUTE_MS,
+    inQuiet: inQuietHours(nowMinutes, profile.quietStartMin, profile.quietEndMin),
+    minutesSinceMark: lastMark ? (nowMs - Date.parse(lastMark)) / MINUTE_MS : null,
+    shownToday,
+    dismissalsThisWeek: (await eventsSince(db, 'steady_hand_dismissed', weekStart)).length,
+  });
+  if (!window) return null;
+  const guardian = (await listGuardians(db)).find((g) => g.consentedAt && g.contact) ?? null;
+  return { window, doseId: oldest.id, guardian };
+}
 
 export interface HomeData {
   profile: Profile;
@@ -39,6 +91,8 @@ export interface HomeData {
   bedtime: BedtimeCard;
   /** A dose has been open long enough for this support level to offer the help sheet. */
   helpDue: boolean;
+  /** The harder-time window to show the Steady Hand card for (spec §6), with what its buttons act on. */
+  steadyHand: { window: Window; doseId: string; guardian: Guardian | null } | null;
 }
 
 /** Loads Home from the database and refreshes on focus and on return to the foreground (spec §3.5). */
@@ -76,8 +130,12 @@ export function useHome() {
       now: now.toISOString(),
       offeredToday: await hasEventForDate(db, 'help_offered', today),
     });
+    const steadyHand = profile.cravingWindowsEnabled ? await loadSteadyHand(db, { profile, today, now, doses }) : null;
     setSupportLevel(profile.supportLevel);
     useApp.getState().setCrisisRegion(profile.crisisRegion);
+    useApp
+      .getState()
+      .setLongOverdue(doses.some((d) => d.dueLocalDate === today && d.status === 'pending' && now.getTime() - Date.parse(d.dueAtUtc) >= LONG_OVERDUE_MS));
     setData({
       profile,
       today,
@@ -92,6 +150,7 @@ export function useHome() {
       trophies,
       bedtime,
       helpDue,
+      steadyHand,
     });
   }, [db, setSupportLevel]);
 
@@ -184,10 +243,22 @@ export function useHome() {
     await load();
   }, [db, load]);
 
+  /** The Steady Hand card was acted on or put away: not again in this window today. A put-away counts toward two a week. */
+  const steadyHandDone = useCallback(
+    async (key: string, dismissed: boolean) => {
+      if (!data) return;
+      const at = new Date().toISOString();
+      await logEvent(db, 'steady_hand_shown', { at, date: data.today, key });
+      if (dismissed) await logEvent(db, 'steady_hand_dismissed', { at });
+      await load();
+    },
+    [db, data, load],
+  );
+
   /** The overdue help sheet was shown today; don't offer it again until tomorrow. */
   const noteHelpOffered = useCallback(async () => {
     if (data) await logEvent(db, 'help_offered', { date: data.today });
   }, [db, data]);
 
-  return { data, reload: load, mark, pickMood, dismissMood, pickEveningMood, dismissEvening, collect, goodnight, moreTime, noteHelpOffered };
+  return { data, reload: load, mark, pickMood, dismissMood, pickEveningMood, dismissEvening, collect, goodnight, moreTime, noteHelpOffered, steadyHandDone };
 }

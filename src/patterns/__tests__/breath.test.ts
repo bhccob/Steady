@@ -1,4 +1,5 @@
-import { BREATH_TOTAL_MS, breathAt, inQuietHours } from '../breath';
+import { inQuietHours } from '../../lib/time';
+import { BREATH_TOTAL_MS, breathAt } from '../breath';
 
 describe('breathAt (4-7-8 for a minute)', () => {
   it('breathes in for 4 seconds, holds for 7, breathes out for 8', () => {

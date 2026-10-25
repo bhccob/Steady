@@ -11,12 +11,13 @@ const ICONS: Record<string, IconName> = { home: 'home', calendar: 'calendar', gu
 
 /**
  * Floating glass tab bar with the emergency button beside it, on every tab: crisis
- * help is never more than two taps away. At close support it shows as "Reach out".
+ * help is never more than two taps away. It grows into "Reach out" at close support, and
+ * whenever a dose is more than two hours overdue (spec §7.1): more visible, never red or pulsing.
  */
 export function FloatingTabBar({ state, descriptors, navigateToTab, insets }: BottomTabBarProps) {
   const theme = useTheme();
   const openHelp = useApp((s) => s.openHelp);
-  const close = useApp((s) => s.supportLevel === 'close');
+  const close = useApp((s) => s.supportLevel === 'close' || s.longOverdue);
   const glass = { backgroundColor: theme.glass.solid, borderColor: theme.glass.border, boxShadow: theme.glass.shadow };
 
   return (

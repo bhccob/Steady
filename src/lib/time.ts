@@ -57,3 +57,9 @@ export function parseHm(hm: string): number {
 export function stepMinutes(min: number, delta: number): number {
   return (((min + delta) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
 }
+
+/** Whether `nowMin` falls in quiet hours from `startMin` to `endMin` (wrapping past midnight). Equal ends mean none. */
+export function inQuietHours(nowMin: number, startMin: number, endMin: number): boolean {
+  if (startMin === endMin) return false;
+  return startMin < endMin ? nowMin >= startMin && nowMin < endMin : nowMin >= startMin || nowMin < endMin;
+}

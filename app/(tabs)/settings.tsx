@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { listHarderTimes } from '../../src/db/dao/harderTimes';
 import { listMeds, type Med } from '../../src/db/dao/meds';
 import { getProfile, updateProfile, type Profile } from '../../src/db/dao/profile';
 import { listSchedules, type Schedule } from '../../src/db/dao/schedules';
@@ -35,6 +36,7 @@ interface SettingsData {
   meds: Med[];
   schedules: Schedule[];
   conditionCount: number;
+  harderTimeCount: number;
 }
 
 type Sheet = 'name' | 'quiet' | 'delete' | 'disclaimer' | null;
@@ -114,7 +116,13 @@ export default function SettingsScreen() {
   const load = useCallback(async () => {
     const profile = await getProfile(db);
     if (!profile) return;
-    setData({ profile, meds: await listMeds(db), schedules: await listSchedules(db), conditionCount: (await listConditions(db)).length });
+    setData({
+      profile,
+      meds: await listMeds(db),
+      schedules: await listSchedules(db),
+      conditionCount: (await listConditions(db)).length,
+      harderTimeCount: (await listHarderTimes(db)).length,
+    });
   }, [db]);
 
   useFocusEffect(
@@ -212,6 +220,21 @@ export default function SettingsScreen() {
 
           <Section title="Sleep">
             <Row label="Bedtime reminders" value={sleepValue} onPress={() => router.push('/edit/sleep')} />
+          </Section>
+
+          <Section title="My patterns">
+            <Toggle
+              label="Show my harder times"
+              hint="Your own patterns, shown back to you in the app. Off unless you turn it on."
+              value={profile.cravingWindowsEnabled}
+              onChange={async (on) => {
+                await updateProfile(db, { cravingWindowsEnabled: on });
+                useApp.getState().bumpData();
+              }}
+            />
+            {profile.cravingWindowsEnabled ? (
+              <Row label="My harder times" value={data.harderTimeCount ? String(data.harderTimeCount) : 'None set'} onPress={() => router.push('/edit/patterns')} />
+            ) : null}
           </Section>
 
           <Section title="Privacy">

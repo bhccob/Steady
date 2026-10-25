@@ -23,9 +23,3 @@ export function breathAt(elapsedMs: number): { phase: BreathPhase; secondsLeft: 
   }
   return { phase: 'done', secondsLeft: 0, progress: 1, cycle: CYCLES };
 }
-
-/** Whether `nowMin` falls in quiet hours from `startMin` to `endMin` (wrapping past midnight). Equal ends mean none. */
-export function inQuietHours(nowMin: number, startMin: number, endMin: number): boolean {
-  if (startMin === endMin) return false;
-  return startMin < endMin ? nowMin >= startMin && nowMin < endMin : nowMin >= startMin || nowMin < endMin;
-}

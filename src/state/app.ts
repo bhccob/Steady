@@ -14,6 +14,9 @@ interface AppState {
   crisisRegion: string | null;
   /** Face or fingerprint lock, and hiding the app in the app switcher. */
   privacy: { lock: boolean; hide: boolean };
+  /** A dose is more than two hours overdue: the emergency button grows more visible (spec §7.1). */
+  longOverdue: boolean;
+  setLongOverdue: (v: boolean) => void;
   setSupportLevel: (l: SupportLevel) => void;
   setCrisisRegion: (r: string | null) => void;
   setPrivacy: (p: { lock: boolean; hide: boolean }) => void;
@@ -28,6 +31,8 @@ export const useApp = create<AppState>((set) => ({
   dataVersion: 0,
   crisisRegion: null,
   privacy: { lock: false, hide: false },
+  longOverdue: false,
+  setLongOverdue: (longOverdue) => set({ longOverdue }),
   setSupportLevel: (supportLevel) => set({ supportLevel }),
   setCrisisRegion: (crisisRegion) => set({ crisisRegion }),
   setPrivacy: (privacy) => set({ privacy }),

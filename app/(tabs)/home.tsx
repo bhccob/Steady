@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +9,8 @@ import { eveningCheckinDue } from '../../src/home/evening';
 import { MoodPrompt } from '../../src/home/MoodPrompt';
 import { buildPath, indexOfToday, type PathEntry } from '../../src/home/path';
 import { BedtimeCard } from '../../src/home/BedtimeCard';
+import { SteadyHandCard } from '../../src/home/SteadyHandCard';
+import { messageUrl, openUrl } from '../../src/lib/contact';
 import { PillCard, type NextDose } from '../../src/home/PillCard';
 import { StreakPath } from '../../src/home/StreakPath';
 import { useHome } from '../../src/home/useHome';
@@ -26,8 +29,10 @@ import { AppText } from '../../src/ui/Text';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { data, reload, mark, pickMood, dismissMood, pickEveningMood, dismissEvening, collect, goodnight, moreTime, noteHelpOffered } = useHome();
+  const { data, reload, mark, pickMood, dismissMood, pickEveningMood, dismissEvening, collect, goodnight, moreTime, noteHelpOffered, steadyHandDone } =
+    useHome();
   const openHelp = useApp((s) => s.openHelp);
+  const router = useRouter();
   const [sheet, setSheet] = useState<{ entry: PathEntry; justCollected: boolean } | null>(null);
   const [moodHandled, setMoodHandled] = useState(false);
   const [eveningHandled, setEveningHandled] = useState(false);
@@ -143,6 +148,33 @@ export default function HomeScreen() {
               </Glass>
             </View>
           </View>
+
+          {data.steadyHand
+            ? (() => {
+                const { window, doseId, guardian } = data.steadyHand;
+                const reach = guardian?.contact ? messageUrl(guardian.channel, guardian.contact) : null;
+                return (
+                  <SteadyHandCard
+                    source={window.source}
+                    guardianName={reach ? guardian!.displayName : null}
+                    onMark={async () => {
+                      await onMark(doseId);
+                      steadyHandDone(window.key, false);
+                    }}
+                    onBreathe={() => {
+                      steadyHandDone(window.key, false);
+                      router.push('/breathe');
+                    }}
+                    onReachOut={() => {
+                      steadyHandDone(window.key, false);
+                      if (reach) openUrl(reach);
+                      else openHelp('button');
+                    }}
+                    onDismiss={() => steadyHandDone(window.key, true)}
+                  />
+                );
+              })()
+            : null}
 
           {data.bedtime ? <BedtimeCard kind={data.bedtime} onGoodnight={goodnight} onMoreTime={moreTime} /> : null}
 
