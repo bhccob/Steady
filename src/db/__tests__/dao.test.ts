@@ -2,7 +2,7 @@ import { createTestDb } from '../../test-utils/sqlite';
 import { awardBadge } from '../dao/badges';
 import { getCheckin, getEveningCheckin, listCheckins, upsertCheckin, upsertEveningCheckin } from '../dao/checkins';
 import { getDose, insertPendingDose, listDosesBetween, lockExpiredDoses, setDoseStatus } from '../dao/doses';
-import { eventsSince, hasEventForDate, lastEventAt, latestEventTime, listEvents, logEvent } from '../dao/events';
+import { countEventsSince, eventsSince, hasEventForDate, lastEventAt, latestEventTime, listEvents, logEvent } from '../dao/events';
 import { listHarderTimes, replaceHarderTimes } from '../dao/harderTimes';
 import { collectTrophy, listTrophies } from '../dao/trophies';
 import { insertGuardian, listGuardians, markGuardianAgreed, revokeGuardian } from '../dao/guardians';
@@ -207,6 +207,15 @@ describe('timed events', () => {
       { doseIds: ['c'], at: '2026-10-25T08:30:00.000Z' },
       { doseIds: ['a'], at: '2026-10-25T09:00:00.000Z' },
     ]);
+  });
+
+  it('counts events of a type logged since a moment', async () => {
+    const db = await freshDb();
+    await logEvent(db, 'comeback');
+    await logEvent(db, 'comeback');
+    await logEvent(db, 'dose_marked', { doseId: 'a' });
+    expect(await countEventsSince(db, 'comeback', '2000-01-01T00:00:00.000Z')).toBe(2);
+    expect(await countEventsSince(db, 'comeback', '2999-01-01T00:00:00.000Z')).toBe(0);
   });
 
   it('finds when an event last happened, or null', async () => {

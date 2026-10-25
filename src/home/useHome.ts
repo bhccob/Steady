@@ -5,7 +5,7 @@ import { AppState } from 'react-native';
 
 import { getCheckin, getEveningCheckin, listCheckins, upsertCheckin, upsertEveningCheckin, type Checkin } from '../db/dao/checkins';
 import { listDosesBetween, type Dose } from '../db/dao/doses';
-import { eventsSince, hasEventForDate, latestEventTime, logEvent } from '../db/dao/events';
+import { countEventsSince, eventsSince, hasEventForDate, latestEventTime, logEvent } from '../db/dao/events';
 import { listGuardians, type Guardian } from '../db/dao/guardians';
 import { listHarderTimes } from '../db/dao/harderTimes';
 import { listMeds, type Med } from '../db/dao/meds';
@@ -25,6 +25,7 @@ import { LEVEL_RULES } from '../support/level';
 import { bedtimeCard, type BedtimeCard } from './bedtime';
 import { shouldOfferHelp } from './help';
 import { markDose, type MarkOutcome } from './markDose';
+import { recapDue, recapLine, weeklyRecap } from './recap';
 
 const REFRESH_MS = 5 * MINUTE_MS;
 const LONG_OVERDUE_MS = 120 * MINUTE_MS;
@@ -93,6 +94,8 @@ export interface HomeData {
   helpDue: boolean;
   /** The harder-time window to show the Steady Hand card for (spec §6), with what its buttons act on. */
   steadyHand: { window: Window; doseId: string; guardian: Guardian | null } | null;
+  /** Sunday's recap line, until seen (spec §12.7). */
+  recap: string | null;
 }
 
 /** Loads Home from the database and refreshes on focus and on return to the foreground (spec §3.5). */
@@ -131,6 +134,10 @@ export function useHome() {
       offeredToday: await hasEventForDate(db, 'help_offered', today),
     });
     const steadyHand = profile.cravingWindowsEnabled ? await loadSteadyHand(db, { profile, today, now, doses }) : null;
+    const week = weekStartOf(today);
+    const recap = recapDue({ today, nowMinutes: localMinutesIn(now, tz), seenThisWeek: await hasEventForDate(db, 'recap_seen', week) })
+      ? recapLine(weeklyRecap({ doses, today, comebacks: await countEventsSince(db, 'comeback', zonedTimeToUtc(week, '00:00', tz)) }))
+      : null;
     setSupportLevel(profile.supportLevel);
     useApp.getState().setCrisisRegion(profile.crisisRegion);
     useApp
@@ -151,6 +158,7 @@ export function useHome() {
       bedtime,
       helpDue,
       steadyHand,
+      recap,
     });
   }, [db, setSupportLevel]);
 
@@ -255,10 +263,30 @@ export function useHome() {
     [db, data, load],
   );
 
+  const recapSeen = useCallback(async () => {
+    if (!data) return;
+    await logEvent(db, 'recap_seen', { date: weekStartOf(data.today) });
+    await load();
+  }, [db, data, load]);
+
   /** The overdue help sheet was shown today; don't offer it again until tomorrow. */
   const noteHelpOffered = useCallback(async () => {
     if (data) await logEvent(db, 'help_offered', { date: data.today });
   }, [db, data]);
 
-  return { data, reload: load, mark, pickMood, dismissMood, pickEveningMood, dismissEvening, collect, goodnight, moreTime, noteHelpOffered, steadyHandDone };
+  return {
+    data,
+    reload: load,
+    mark,
+    pickMood,
+    dismissMood,
+    pickEveningMood,
+    dismissEvening,
+    collect,
+    goodnight,
+    moreTime,
+    noteHelpOffered,
+    steadyHandDone,
+    recapSeen,
+  };
 }

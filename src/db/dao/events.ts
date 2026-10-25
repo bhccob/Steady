@@ -47,6 +47,12 @@ export async function eventsSince(db: Db, type: string, since: string): Promise<
   return rows.map((r) => JSON.parse(r.payload_json) as unknown);
 }
 
+/** How many `type` events were logged at or after `since` (by when they were written). */
+export async function countEventsSince(db: Db, type: string, since: string): Promise<number> {
+  const r = await db.getFirstAsync<{ n: number }>('SELECT count(*) AS n FROM events WHERE type = ? AND created_at >= ?', [type, since]);
+  return r?.n ?? 0;
+}
+
 /** The latest `at` among `type` events, or null. */
 export async function latestEventTime(db: Db, type: string): Promise<string | null> {
   const r = await db.getFirstAsync<{ at: string | null }>("SELECT max(json_extract(payload_json, '$.at')) AS at FROM events WHERE type = ?", [type]);

@@ -9,6 +9,7 @@ import { eveningCheckinDue } from '../../src/home/evening';
 import { MoodPrompt } from '../../src/home/MoodPrompt';
 import { buildPath, indexOfToday, type PathEntry } from '../../src/home/path';
 import { BedtimeCard } from '../../src/home/BedtimeCard';
+import { RecapCard } from '../../src/home/RecapCard';
 import { SteadyHandCard } from '../../src/home/SteadyHandCard';
 import { messageUrl, openUrl } from '../../src/lib/contact';
 import { PillCard, type NextDose } from '../../src/home/PillCard';
@@ -29,8 +30,21 @@ import { AppText } from '../../src/ui/Text';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { data, reload, mark, pickMood, dismissMood, pickEveningMood, dismissEvening, collect, goodnight, moreTime, noteHelpOffered, steadyHandDone } =
-    useHome();
+  const {
+    data,
+    reload,
+    mark,
+    pickMood,
+    dismissMood,
+    pickEveningMood,
+    dismissEvening,
+    collect,
+    goodnight,
+    moreTime,
+    noteHelpOffered,
+    steadyHandDone,
+    recapSeen,
+  } = useHome();
   const openHelp = useApp((s) => s.openHelp);
   const router = useRouter();
   const [sheet, setSheet] = useState<{ entry: PathEntry; justCollected: boolean } | null>(null);
@@ -175,6 +189,8 @@ export default function HomeScreen() {
                 );
               })()
             : null}
+
+          {data.recap ? <RecapCard line={data.recap} onSeen={recapSeen} /> : null}
 
           {data.bedtime ? <BedtimeCard kind={data.bedtime} onGoodnight={goodnight} onMoreTime={moreTime} /> : null}
 
