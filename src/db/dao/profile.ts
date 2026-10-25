@@ -1,0 +1,104 @@
+import { nowIso } from '../../lib/time';
+import type { StillUp, SupportLevel } from '../schema';
+import { setClause, toSql } from '../sql';
+import type { Db } from '../types';
+
+export interface Profile {
+  displayName: string;
+  timezone: string;
+  quietStartMin: number;
+  quietEndMin: number;
+  cravingWindowsEnabled: boolean;
+  biometricLock: boolean;
+  disclaimerAcceptedAt: string | null;
+  ageConfirmedAt: string | null;
+  /** Minutes after local midnight. Null until the user sets up sleep. */
+  bedtimeMin: number | null;
+  wakeMin: number | null;
+  windDown: boolean;
+  /** Null means "follow my support level". */
+  stillUp: StillUp | null;
+  supportLevel: SupportLevel;
+  /** True when the user picked the level themselves instead of the suggested one. */
+  supportLevelChosen: boolean;
+  createdAt: string;
+}
+
+export type ProfilePatch = Partial<Omit<Profile, 'createdAt'>>;
+
+interface ProfileRow {
+  display_name: string;
+  timezone: string;
+  quiet_start_min: number;
+  quiet_end_min: number;
+  craving_windows_enabled: number;
+  biometric_lock: number;
+  disclaimer_accepted_at: string | null;
+  age_confirmed_at: string | null;
+  bedtime_min: number | null;
+  wake_min: number | null;
+  wind_down: number;
+  still_up: StillUp | null;
+  support_level: SupportLevel;
+  support_level_chosen: number;
+  created_at: string;
+}
+
+const COLUMNS: Record<keyof ProfilePatch, string> = {
+  displayName: 'display_name',
+  timezone: 'timezone',
+  quietStartMin: 'quiet_start_min',
+  quietEndMin: 'quiet_end_min',
+  cravingWindowsEnabled: 'craving_windows_enabled',
+  biometricLock: 'biometric_lock',
+  disclaimerAcceptedAt: 'disclaimer_accepted_at',
+  ageConfirmedAt: 'age_confirmed_at',
+  bedtimeMin: 'bedtime_min',
+  wakeMin: 'wake_min',
+  windDown: 'wind_down',
+  stillUp: 'still_up',
+  supportLevel: 'support_level',
+  supportLevelChosen: 'support_level_chosen',
+};
+
+function fromRow(r: ProfileRow): Profile {
+  return {
+    displayName: r.display_name,
+    timezone: r.timezone,
+    quietStartMin: r.quiet_start_min,
+    quietEndMin: r.quiet_end_min,
+    cravingWindowsEnabled: r.craving_windows_enabled === 1,
+    biometricLock: r.biometric_lock === 1,
+    disclaimerAcceptedAt: r.disclaimer_accepted_at,
+    ageConfirmedAt: r.age_confirmed_at,
+    bedtimeMin: r.bedtime_min,
+    wakeMin: r.wake_min,
+    windDown: r.wind_down === 1,
+    stillUp: r.still_up,
+    supportLevel: r.support_level,
+    supportLevelChosen: r.support_level_chosen === 1,
+    createdAt: r.created_at,
+  };
+}
+
+export async function getProfile(db: Db): Promise<Profile | null> {
+  const row = await db.getFirstAsync<ProfileRow>('SELECT * FROM profile WHERE id = 1', []);
+  return row ? fromRow(row) : null;
+}
+
+/** Single-row table, written in one statement. Unset fields take the schema defaults. */
+export async function createProfile(
+  db: Db,
+  input: { displayName: string; timezone: string } & ProfilePatch,
+): Promise<void> {
+  const keys = (Object.keys(input) as (keyof ProfilePatch)[]).filter((k) => input[k] !== undefined);
+  const cols = ['id', 'created_at', ...keys.map((k) => COLUMNS[k])];
+  const values = [1, nowIso(), ...keys.map((k) => toSql(input[k]))];
+  await db.runAsync(`INSERT INTO profile (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`, values);
+}
+
+export async function updateProfile(db: Db, patch: ProfilePatch): Promise<void> {
+  const { sql, values } = setClause(patch, COLUMNS);
+  if (!sql) return;
+  await db.runAsync(`UPDATE profile SET ${sql} WHERE id = 1`, values);
+}

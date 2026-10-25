@@ -1,0 +1,19 @@
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.DS_Store
+npm-debug.*
+coverage/
+.superpowers/
+
+# Claude Code personal settings
+.claude/settings.local.json

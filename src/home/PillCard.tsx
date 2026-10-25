@@ -1,0 +1,156 @@
+import { useLayoutEffect, useRef, useState } from 'react';
+import { Animated, PanResponder, Pressable, StyleSheet, View } from 'react-native';
+
+import { useReducedMotion } from '../lib/useReducedMotion';
+import { useTheme } from '../theme/useTheme';
+import { Glass } from '../ui/Glass';
+import { Icon } from '../ui/Icon';
+import { AppText } from '../ui/Text';
+
+export interface NextDose {
+  id: string;
+  label: string;
+  timeLabel: string;
+  dueMs: number;
+}
+
+/** Marking opens an hour before the dose is due. */
+const EARLY_MS = 60 * 60_000;
+/** The waiting bar fills over 12 hours and stops there. */
+const BAR_CAP_MIN = 720;
+
+/** Spec §8.2.1 copy ladder. Never shaming, never red. */
+function waitingCopy(lateMin: number): string {
+  if (lateMin < 30) return 'on track';
+  if (lateMin < 120) return 'still waiting';
+  return "it's been a while — no judgment";
+}
+
+interface PillCardProps {
+  next: NextDose | null;
+  nowMs: number;
+  hasMeds: boolean;
+  /** Shown under the name after a comeback. */
+  note?: string;
+  onMark: (doseId: string) => void;
+}
+
+/** The next dose. Swipe right or tap the round check to mark it taken. */
+export function PillCard({ next, nowMs, hasMeds, note, onMark }: PillCardProps) {
+  const theme = useTheme();
+  const reduced = useReducedMotion();
+  const [width, setWidth] = useState(300);
+  const [x] = useState(() => new Animated.Value(0));
+  const markable = next !== null && nowMs >= next.dueMs - EARLY_MS;
+
+  // The latest props for the gesture handlers, which are made once.
+  const live = useRef({ next, width, onMark, markable, reduced });
+  useLayoutEffect(() => {
+    live.current = { next, width, onMark, markable, reduced };
+  });
+
+  // The handlers read `live` only when a swipe happens, never while rendering.
+  // eslint-disable-next-line react-hooks/refs
+  const [pan] = useState(() =>
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => live.current.markable && g.dx > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderMove: (_, g) => x.setValue(Math.max(0, g.dx)),
+      onPanResponderRelease: (_, g) => {
+        const { next: n, width: w, onMark: mark, reduced: still } = live.current;
+        if (n && g.dx > w * 0.4) {
+          const done = () => {
+            mark(n.id);
+            x.setValue(0);
+          };
+          if (still) done();
+          else Animated.timing(x, { toValue: w, duration: 180, useNativeDriver: false }).start(done);
+        } else if (still) x.setValue(0);
+        else Animated.spring(x, { toValue: 0, useNativeDriver: false, damping: 18, stiffness: 140 }).start();
+      },
+      onPanResponderTerminate: () => x.setValue(0),
+    }),
+  );
+
+  if (!next) {
+    return (
+      <Glass contentStyle={styles.card}>
+        <AppText tone="secondary" variant="caption">
+          {hasMeds ? 'today' : 'no meds yet'}
+        </AppText>
+        <AppText variant="heading">{hasMeds ? 'All marked for today.' : 'Add a med in Settings.'}</AppText>
+      </Glass>
+    );
+  }
+
+  const lateMin = (nowMs - next.dueMs) / 60_000;
+  const underWidth = Animated.add(x, 30);
+
+  return (
+    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <Animated.View style={[styles.under, { width: underWidth, backgroundColor: theme.accent }]} pointerEvents="none">
+        <View style={styles.underInner}>
+          <Icon name="check" size={20} color={theme.onAccent} />
+          <AppText variant="bodyStrong" style={{ color: theme.onAccent }}>
+            Taken
+          </AppText>
+        </View>
+      </Animated.View>
+      <Animated.View style={{ transform: [{ translateX: x }] }} {...pan.panHandlers}>
+        <Glass contentStyle={styles.card} accessibilityActions={markable ? [{ name: 'activate', label: 'Mark taken' }] : undefined} onAccessibilityAction={() => markable && onMark(next.id)}>
+          <View style={styles.top}>
+            <View style={styles.grow}>
+              <AppText tone="secondary" variant="caption">
+                next up
+              </AppText>
+              <AppText variant="heading" numberOfLines={2}>
+                {next.label}
+              </AppText>
+            </View>
+            <AppText tone="secondary">{next.timeLabel}</AppText>
+          </View>
+          {markable ? (
+            <View style={styles.foot}>
+              <View style={styles.grow}>
+                {lateMin > 0 ? (
+                  <View style={[styles.track, { backgroundColor: 'rgba(27, 22, 19, 0.1)' }]} accessibilityElementsHidden importantForAccessibility="no">
+                    <View style={[styles.fill, { width: `${Math.min(lateMin / BAR_CAP_MIN, 1) * 100}%`, backgroundColor: theme.accentLine }]} />
+                  </View>
+                ) : null}
+                <AppText variant="caption" tone="secondary">
+                  {note ?? `${lateMin > 0 ? waitingCopy(lateMin) : 'soon'} · swipe to mark →`}
+                </AppText>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Mark ${next.label} as taken, due ${next.timeLabel}`}
+                onPress={() => onMark(next.id)}
+                style={({ pressed }) => [
+                  styles.round,
+                  { backgroundColor: theme.accent, borderBottomColor: theme.accentDeep, borderBottomWidth: pressed ? 2 : 4, transform: [{ translateY: pressed ? 2 : 0 }] },
+                ]}
+              >
+                <Icon name="check" size={22} color={theme.onAccent} />
+              </Pressable>
+            </View>
+          ) : (
+            <AppText variant="caption" tone="secondary">
+              {note ?? 'later today'}
+            </AppText>
+          )}
+        </Glass>
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { padding: 16, gap: 10 },
+  top: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  grow: { flex: 1, gap: 6 },
+  foot: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  track: { height: 4, borderRadius: 99, overflow: 'hidden' },
+  fill: { height: 4, borderRadius: 99 },
+  round: { width: 50, height: 50, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  under: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 28, overflow: 'hidden', justifyContent: 'center' },
+  underInner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 18, width: 200 },
+});

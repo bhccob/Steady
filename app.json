@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Steady",
+    "slug": "steady",
+    "scheme": "steady",
+    "version": "1.0.0",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#FBF7F2",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-sqlite",
+      "expo-localization"
+    ]
+  }
+}

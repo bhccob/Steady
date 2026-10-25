@@ -1,0 +1,41 @@
+import { useRouter } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { WelcomePath } from '../../src/onboarding/WelcomePath';
+import { layout } from '../../src/theme/tokens';
+import { Background } from '../../src/ui/Background';
+import { Button } from '../../src/ui/Button';
+import { AppText } from '../../src/ui/Text';
+
+export default function Welcome() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Background>
+      <View style={[styles.column, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
+        <WelcomePath />
+        <AppText variant="display" accessibilityRole="header">
+          {'Small marks,\nsteadier days.'}
+        </AppText>
+        <AppText tone="secondary" style={styles.sub}>
+          A gentle way to keep track of your meds, at your own pace. One block for every day you mark.
+        </AppText>
+        <View style={styles.footer}>
+          <Button label="Get started" onPress={() => router.push('/onboarding/name')} />
+          <AppText variant="caption" tone="secondary" style={styles.center}>
+            No account. No email. It all stays on this phone.
+          </AppText>
+        </View>
+      </View>
+    </Background>
+  );
+}
+
+const styles = StyleSheet.create({
+  column: { flex: 1, width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', paddingHorizontal: layout.gutter },
+  sub: { marginTop: 8 },
+  footer: { marginTop: 'auto', gap: 10 },
+  center: { textAlign: 'center' },
+});

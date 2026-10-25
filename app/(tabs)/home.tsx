@@ -1,0 +1,186 @@
+import { useEffect, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import type { Mood } from '../../src/db/schema';
+import { DaySheet } from '../../src/home/DaySheet';
+import { MoodPrompt } from '../../src/home/MoodPrompt';
+import { buildPath, indexOfToday, type PathEntry } from '../../src/home/path';
+import { PillCard, type NextDose } from '../../src/home/PillCard';
+import { StreakPath } from '../../src/home/StreakPath';
+import { useHome } from '../../src/home/useHome';
+import { shortDate } from '../../src/lib/time';
+import { localDateIn } from '../../src/lib/tz';
+import { totalPoints, weekLabel, weekStartOf } from '../../src/rewards/trophies';
+import { steadyScore } from '../../src/scoring/score';
+import { classifyMark } from '../../src/scoring/status';
+import { steadyStreak, totalDaysMarked } from '../../src/scoring/streak';
+import { useApp } from '../../src/state/app';
+import { layout } from '../../src/theme/tokens';
+import { Background } from '../../src/ui/Background';
+import { Glass } from '../../src/ui/Glass';
+import { Icon } from '../../src/ui/Icon';
+import { AppText } from '../../src/ui/Text';
+
+export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  const { data, reload, mark, pickMood, dismissMood, collect } = useHome();
+  const openHelp = useApp((s) => s.openHelp);
+  const [sheet, setSheet] = useState<{ entry: PathEntry; justCollected: boolean } | null>(null);
+  const [moodHandled, setMoodHandled] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+  const [note, setNote] = useState<string | undefined>();
+  const offerHelp = useRef<Promise<boolean>>(Promise.resolve(false));
+
+  useEffect(() => {
+    if (!note) return;
+    const t = setTimeout(() => setNote(undefined), 5000);
+    return () => clearTimeout(t);
+  }, [note]);
+
+  if (!data) return <Background />;
+
+  const { profile, today, nowMs } = data;
+  const tz = profile.timezone;
+  const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: tz });
+  const nowIso = new Date(nowMs).toISOString();
+
+  const entries = buildPath({
+    doses: data.doses,
+    today,
+    firstDay: localDateIn(new Date(profile.createdAt), tz),
+    collected: new Set(data.trophies.map((t) => t.weekStart)),
+    nowMinutes: data.nowMinutes,
+  });
+  const todayIdx = indexOfToday(entries);
+  const todayEntry = entries[todayIdx];
+  const focus = todayEntry?.kind === 'day' && todayEntry.state === 'done' ? todayIdx : Math.max(0, todayIdx - 1);
+
+  const streak = steadyStreak(data.doses, today);
+  const score = steadyScore(data.doses, today);
+  const marked = totalDaysMarked(data.doses);
+  const points = totalPoints({ markedDays: marked, trophiesCollected: data.trophies.length });
+
+  const todays = data.doses.filter((d) => d.dueLocalDate === today).sort((a, b) => (a.dueAtUtc < b.dueAtUtc ? -1 : 1));
+  const nextDose = todays.find((d) => d.status === 'pending' && classifyMark(d.dueAtUtc, nowIso) !== null) ?? null;
+  const next: NextDose | null = nextDose
+    ? { id: nextDose.id, label: data.meds.get(nextDose.medId)?.label ?? 'my pill', timeLabel: clock(nextDose.dueAtUtc), dueMs: Date.parse(nextDose.dueAtUtc) }
+    : null;
+  const others = todays.filter((d) => d.id !== nextDose?.id);
+
+  const onMark = async (doseId: string) => {
+    const outcome = await mark(doseId);
+    if (outcome?.comeback) setNote('there you are.');
+  };
+
+  const onTap = async (i: number) => {
+    const e = entries[i];
+    if (!e) return;
+    if (e.kind === 'trophy' && e.state === 'ready') {
+      await collect(e.weekStart, e.daysMarked);
+      setSheet({ entry: { ...e, state: 'got' }, justCollected: true });
+    } else {
+      setSheet({ entry: e, justCollected: false });
+    }
+  };
+
+  const summary = `${streak} day streak. Steady ${score}. ${marked} days marked. ${points} points.`;
+
+  return (
+    <Background>
+      <ScrollView scrollEnabled={scrollEnabled} contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 120 }]}>
+        <View style={styles.column}>
+          <View style={styles.header}>
+            <AppText variant="heading" accessibilityRole="header">
+              {profile.displayName.trim() ? `${profile.displayName.trim()}.` : 'Today.'}
+            </AppText>
+            <AppText variant="caption" tone="secondary">
+              {shortDate(today)}
+            </AppText>
+          </View>
+
+          <View style={styles.hero}>
+            <StreakPath entries={entries} focus={focus} onTap={onTap} onDragChange={(d) => setScrollEnabled(!d)} />
+            <View pointerEvents="none" style={styles.heroText} accessible accessibilityLabel={summary}>
+              <View style={styles.streakRow}>
+                <AppText style={styles.streak}>{streak}</AppText>
+                <AppText variant="bodyStrong">day streak</AppText>
+              </View>
+              <AppText variant="caption" tone="secondary">
+                Steady {score} · {marked} days marked
+              </AppText>
+              <AppText variant="caption" tone="secondary">
+                This week · {weekLabel(weekStartOf(today))}
+              </AppText>
+              <Glass variant="pill" style={styles.points} contentStyle={styles.pointsInner}>
+                <Icon name="award" size={16} />
+                <AppText variant="label">{points} points</AppText>
+              </Glass>
+            </View>
+          </View>
+
+          <PillCard next={next} nowMs={nowMs} hasMeds={data.meds.size > 0} note={note} onMark={onMark} />
+
+          {others.map((d) => {
+            const taken = d.status === 'taken_ontime' || d.status === 'taken_late';
+            return (
+              <View key={d.id} style={styles.later}>
+                <View style={styles.laterLabel}>
+                  {taken ? <Icon name="check" size={16} /> : null}
+                  <AppText>{data.meds.get(d.medId)?.label ?? 'my pill'}</AppText>
+                </View>
+                <AppText tone="secondary">{taken ? `marked ${clock(d.takenAtUtc!)}` : clock(d.dueAtUtc)}</AppText>
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      <MoodPrompt
+        visible={!data.checkinToday && !data.moodDismissed && !moodHandled}
+        name={profile.displayName}
+        hour={Math.floor(data.nowMinutes / 60)}
+        onPick={(m: Mood) => {
+          offerHelp.current = pickMood(m);
+        }}
+        onDismiss={() => {
+          dismissMood();
+        }}
+        onDone={async (m) => {
+          setMoodHandled(true);
+          if (m === 'rough' && (await offerHelp.current)) openHelp('rough');
+          reload();
+        }}
+      />
+
+      <DaySheet
+        entry={sheet?.entry ?? null}
+        justCollected={sheet?.justCollected ?? false}
+        doses={data.doses}
+        meds={data.meds}
+        today={today}
+        nowMs={nowMs}
+        clock={clock}
+        onMark={async (id) => {
+          setSheet(null);
+          await onMark(id);
+        }}
+        onClose={() => setSheet(null)}
+      />
+    </Background>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: { paddingHorizontal: layout.gutter },
+  column: { width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', gap: 10 },
+  header: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  hero: { height: 262, marginHorizontal: -layout.gutter },
+  heroText: { position: 'absolute', left: layout.gutter, top: 2, maxWidth: 160, gap: 2 },
+  streakRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  streak: { fontSize: 52, lineHeight: 58, fontWeight: '600', letterSpacing: -2 },
+  points: { alignSelf: 'flex-start', marginTop: 8 },
+  pointsInner: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, minHeight: 34 },
+  later: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 6 },
+  laterLabel: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+});
