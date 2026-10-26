@@ -7,7 +7,7 @@
 
 A calm, private medication reminder for people working through hard things.
 
-**[Download for Android](https://github.com/bhccob/steady/releases/tag/v1.0.0-preview.1)**: open the link on your phone, download the `.apk` under Assets, and open it to install. iPhone isn't available yet.
+**[Download for Android](https://github.com/bhccob/steady/releases/tag/v1.0.0-preview.2)**: open the link on your phone, download the `.apk` under Assets, and open it to install. iPhone isn't available yet.
 
 Steady helps you keep track of your meds without shame or pressure: small marks, gentle reminders, and a streak that grows one block per marked day. Everything stays on your phone. There's no account, no email and no tracking.
 
