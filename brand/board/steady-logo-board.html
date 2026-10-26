@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steady logo kit</title>
+<style>
+  :root {
+    --ink: #1B1613; --bronze: #7F6440; --beige: #E8D5B5; --paper: #F5F3EF; --linen: #F3ECE2; --sand: #D9C29C;
+    --muted: rgba(27, 22, 19, 0.62); --line: rgba(128, 120, 110, 0.22);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  .page { width: 1600px; margin: 0 auto; padding: 72px 80px 80px; }
+  header { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 40px; padding-bottom: 56px; border-bottom: 1px solid var(--line); }
+  header img { height: 150px; display: block; }
+  header .meta { text-align: right; color: var(--muted); font-size: 14px; }
+  header .meta strong { display: block; color: var(--ink); font-size: 18px; font-weight: 600; }
+  section { padding: 56px 0 8px; }
+  h2 { font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--bronze); margin: 0 0 22px; }
+  .idea { display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: center; }
+  .idea p.big { font-size: 34px; line-height: 1.25; font-weight: 600; margin: 0; letter-spacing: -0.4px; }
+  .idea p.big em { font-style: normal; color: var(--bronze); }
+  .idea ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; }
+  .idea li { padding-left: 22px; position: relative; color: var(--muted); }
+  .idea li::before { content: ""; position: absolute; left: 0; top: 8px; width: 9px; height: 9px; border-radius: 2.5px; background: var(--bronze); }
+  .idea li b { color: var(--ink); font-weight: 600; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .tile { border-radius: 24px; height: 230px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .tile.light { background: #fff; } .tile.dark { background: var(--ink); }
+  .tile .lab { position: absolute; left: 20px; bottom: 16px; font-size: 12px; color: var(--muted); }
+  .tile.dark .lab { color: rgba(243, 236, 226, 0.6); }
+  .row2 { margin-top: 20px; }
+  .uses { display: grid; grid-template-columns: 300px 1fr 300px; gap: 28px; align-items: start; }
+  .phone { width: 300px; height: 610px; border-radius: 44px; background: #0f0d0c; padding: 12px; box-shadow: 0 30px 60px rgba(40, 30, 20, 0.18); }
+  .screen { width: 100%; height: 100%; border-radius: 34px; overflow: hidden; position: relative; }
+  .home { background: linear-gradient(160deg, #6f5e4c 0%, #3a312a 55%, #231d19 100%); padding: 64px 22px 0; }
+  .clock { color: #f3ece2; font-size: 54px; font-weight: 300; letter-spacing: -1px; line-height: 1; }
+  .date { color: rgba(243, 236, 226, 0.75); font-size: 13px; margin: 6px 0 40px; }
+  .apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px 10px; }
+  .app { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #f3ece2; font-size: 11px; }
+  .app i { width: 52px; height: 52px; border-radius: 50%; display: block; }
+  /* Android shows the middle 72 of the adaptive icon's 108 dp, here cut to a circle. */
+  .app .adaptive { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; position: relative; background: var(--beige); display: block; }
+  .app .adaptive img { position: absolute; width: 78px; height: 78px; left: -13px; top: -13px; }
+  .dock { position: absolute; left: 22px; right: 22px; bottom: 22px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; justify-items: center; padding: 12px 0; border-radius: 28px; background: rgba(255, 255, 255, 0.12); }
+  .dock i { width: 46px; height: 46px; border-radius: 50%; display: block; }
+  .shade { background: linear-gradient(180deg, #2b2622, #1c1815); padding: 54px 14px 0; }
+  .qs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .qs i { height: 44px; border-radius: 22px; background: rgba(255, 255, 255, 0.1); display: block; }
+  .qs i:first-child { background: var(--sand); }
+  .note { background: #f6f1ea; border-radius: 22px; padding: 14px 16px 12px; color: var(--ink); }
+  .note .top { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .note .top span.ic { width: 20px; height: 20px; border-radius: 50%; background: var(--bronze); display: flex; align-items: center; justify-content: center; }
+  .note .top span.ic img { width: 13px; height: 13px; }
+  .note h4 { margin: 8px 0 2px; font-size: 14px; font-weight: 600; }
+  .note p { margin: 0; font-size: 13px; color: var(--muted); }
+  .note .acts { display: flex; gap: 18px; margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--bronze); }
+  .note.dim { opacity: 0.55; margin-top: 10px; }
+  .status { position: absolute; top: 16px; left: 26px; right: 26px; display: flex; justify-content: space-between; align-items: center; color: #f3ece2; font-size: 12px; }
+  .status img { width: 14px; height: 14px; }
+  .mid { display: grid; gap: 28px; }
+  .browser { border-radius: 18px; overflow: hidden; background: #fff; box-shadow: 0 20px 50px rgba(40, 30, 20, 0.12); }
+  .chrome { background: #e9e5df; padding: 10px 12px 0; display: flex; gap: 8px; align-items: end; }
+  .tabx { background: #fff; border-radius: 10px 10px 0 0; padding: 8px 14px; display: flex; gap: 8px; align-items: center; font-size: 12px; width: 220px; }
+  .tabx.off { background: transparent; color: var(--muted); }
+  .tabx img { width: 16px; height: 16px; }
+  .tabx i { width: 16px; height: 16px; border-radius: 4px; background: #cfc8bf; display: block; }
+  .url { padding: 10px 14px; border-bottom: 1px solid #eee; font-size: 12px; color: #6b6560; }
+  .url span { background: #f2efea; border-radius: 16px; padding: 6px 14px; display: inline-block; width: 70%; }
+  .readme { padding: 26px 34px 30px; }
+  .readme .file { font-size: 12px; color: #6b6560; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 22px; }
+  .readme img.lock { height: 54px; display: block; margin-bottom: 14px; }
+  .readme p { margin: 0 0 12px; font-size: 14px; color: #3b3632; }
+  .readme .dl { display: inline-block; background: var(--ink); color: var(--linen); border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 600; }
+  .twins { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .card { border-radius: 18px; padding: 20px; background: #fff; }
+  .card.dark { background: var(--ink); color: var(--linen); }
+  .card small { display: block; font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .card.dark small { color: rgba(243, 236, 226, 0.6); }
+  .launch { background: var(--paper); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .launch img { width: 150px; height: 150px; border-radius: 50%; }
+  .launch .wm { position: absolute; bottom: 40px; height: 22px; opacity: 0.9; }
+  .caption { font-size: 13px; color: var(--muted); margin-top: 12px; text-align: center; }
+  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+  .sw { border-radius: 20px; overflow: hidden; background: #fff; }
+  .sw .chip { height: 120px; display: flex; align-items: flex-end; padding: 12px 14px; font-size: 12px; font-weight: 600; }
+  .sw .info { padding: 14px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .sw .info b { display: block; color: var(--ink); font-size: 14px; }
+  .rules { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 20px; }
+  .rule { background: #fff; border-radius: 22px; padding: 26px; }
+  .rule h3 { margin: 0 0 6px; font-size: 16px; }
+  .rule p { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+  /* To scale: the wordmark is 161 units tall and its full stop 22, so at 92 px tall a stop is 12.6 px. */
+  .space { position: relative; display: inline-block; padding: 25px; outline: 1.5px dashed rgba(127, 100, 64, 0.55); outline-offset: -1px; }
+  .space img { height: 92px; display: block; }
+  .space .u { position: absolute; display: flex; gap: 0; }
+  .space .u b { width: 12.6px; height: 12.6px; border-radius: 3.4px; background: var(--bronze); opacity: 0.55; }
+  .space .u.side { left: 0; top: 64px; } /* two stops fill the margin's width */
+  .space .u.top { left: 25px; top: 0; flex-direction: column; } /* and its height */
+  .space .u b + b { opacity: 0.35; }
+  .ladder { display: flex; align-items: flex-end; gap: 22px; }
+  .ladder div { text-align: center; font-size: 11px; color: var(--muted); }
+  .ladder img { display: block; margin: 0 auto 6px; }
+  .donts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .dont { background: #fff; border-radius: 18px; height: 150px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .dont .lab { position: absolute; left: 16px; bottom: 12px; font-size: 12px; color: var(--muted); }
+  .dont::after { content: ""; position: absolute; top: 14px; right: 14px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #8a827a; background: linear-gradient(45deg, transparent 45%, #8a827a 45%, #8a827a 55%, transparent 55%); }
+  footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <img src="../logo/steady-wordmark.svg" alt="steady.">
+    <div class="meta"><strong>Logo kit</strong>Version 1 · October 2026</div>
+  </header>
+
+  <section class="idea">
+    <p class="big">Steady talks in short, calm sentences that end in a full stop. The logo does too, and its full stop is <em>a marked day</em>.</p>
+    <ul>
+      <li><b>Calm and honest.</b> Lowercase, even strokes, nothing shouting.</li>
+      <li><b>Private.</b> No pill, cross or brain: on a home screen it reads as a name, not a diagnosis.</li>
+      <li><b>One small mark.</b> The square full stop is the block you fill on the streak path, one a day.</li>
+      <li><b>Drawn, not typed.</b> Every letter is built from one 18-unit stroke and true circles; the s is drawn to match.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>The logo</h2>
+    <div class="grid4">
+      <div class="tile light"><img src="../logo/steady-wordmark.svg" height="78" alt=""><span class="lab">Wordmark — the primary logo</span></div>
+      <div class="tile light"><img src="../logo/steady-symbol.svg" height="96" alt=""><span class="lab">Symbol — "s."</span></div>
+      <div class="tile light"><img src="../logo/steady-horizontal.svg" height="66" alt=""><span class="lab">Horizontal lockup</span></div>
+      <div class="tile light"><img src="../logo/steady-stacked.svg" height="150" alt=""><span class="lab">Stacked lockup</span></div>
+    </div>
+    <div class="grid4 row2">
+      <div class="tile dark"><img src="../logo/steady-wordmark-reversed.svg" height="78" alt=""><span class="lab">Reversed, on Ink</span></div>
+      <div class="tile dark"><img src="../logo/steady-symbol-reversed.svg" height="96" alt=""><span class="lab">Reversed symbol</span></div>
+      <div class="tile dark"><img src="../logo/steady-horizontal-reversed.svg" height="66" alt=""><span class="lab">Horizontal, reversed</span></div>
+      <div class="tile" style="background: var(--beige)"><img src="../logo/steady-app-icon.svg" height="150" alt="" style="border-radius: 34px; box-shadow: 0 10px 30px rgba(60,40,20,.12)"><span class="lab">App icon</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>In use</h2>
+    <div class="uses">
+      <div>
+        <div class="phone"><div class="screen home">
+          <div class="status"><span>9:41</span><span>▴ ▮</span></div>
+          <div class="clock">9:41</div><div class="date">Monday, 26 October</div>
+          <div class="apps">
+            <div class="app"><i style="background:#8fa3a8"></i>Weather</div>
+            <div class="app"><i style="background:#c9b79c"></i>Notes</div>
+            <div class="app"><span class="adaptive"><img src="../icons/app/adaptive-foreground-1024.png" alt=""></span>Steady</div>
+            <div class="app"><i style="background:#9a8f86"></i>Photos</div>
+            <div class="app"><i style="background:#b0a08e"></i>Maps</div>
+            <div class="app"><i style="background:#7e8f84"></i>Music</div>
+            <div class="app"><i style="background:#d8cfc3"></i>Files</div>
+            <div class="app"><i style="background:#a59a90"></i>Clock</div>
+          </div>
+          <div class="dock"><i style="background:#cfc6ba"></i><i style="background:#9fb0a7"></i><i style="background:#bfae96"></i><i style="background:#8b8580"></i></div>
+        </div></div>
+        <p class="caption">Home screen: a name among names</p>
+      </div>
+      <div class="mid">
+        <div class="browser">
+          <div class="chrome"><div class="tabx"><img src="../icons/web/favicon-32.png" alt=""> bhccob/Steady</div><div class="tabx off"><i></i> New tab</div></div>
+          <div class="url"><span>github.com/bhccob/Steady</span></div>
+          <div class="readme">
+            <div class="file">README.md</div>
+            <img class="lock" src="../logo/steady-horizontal.svg" alt="">
+            <p>A calm, private medication reminder for people working through hard things.</p>
+            <span class="dl">Download for Android</span>
+          </div>
+        </div>
+        <div class="twins">
+          <div class="card"><img src="../logo/steady-wordmark.svg" height="34" alt=""><small>On white and Paper: Ink letters, Bronze full stop</small></div>
+          <div class="card dark"><img src="../logo/steady-wordmark-reversed.svg" height="34" alt=""><small>On Ink: Linen letters, Sand full stop, a hair lighter</small></div>
+        </div>
+      </div>
+      <div>
+        <div class="phone"><div class="screen shade">
+          <div class="status"><span>9:41</span><span><img src="../icons/app/notification-96.png" alt=""> ▴ ▮</span></div>
+          <div class="qs"><i></i><i></i><i></i><i></i></div>
+          <div class="note">
+            <div class="top"><span class="ic"><img src="../icons/app/notification-96.png" alt=""></span> Steady · now</div>
+            <h4>sam, a small mark when you're ready.</h4>
+            <div class="acts"><span>Taken</span><span>Snooze 30</span></div>
+          </div>
+          <div class="note dim"><div class="top"><span class="ic" style="background:#8a827a"></span> Calendar · 8 min</div><p>Lunch with Ana</p></div>
+        </div></div>
+        <p class="caption">Notification: the white "s." in the status bar, tinted Bronze in the shade</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Colour</h2>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#1B1613;color:#F3ECE2">Aa</div><div class="info"><b>Steady Ink</b>#1B1613 · RGB 27 22 19<br>CMYK 0 19 30 89<br>Letters, and dark grounds</div></div>
+      <div class="sw"><div class="chip" style="background:#7F6440;color:#fff">Aa</div><div class="info"><b>Mark Bronze</b>#7F6440 · RGB 127 100 64<br>CMYK 0 21 50 50<br>The full stop. Nothing else.</div></div>
+      <div class="sw"><div class="chip" style="background:#E8D5B5;color:#1B1613">Aa</div><div class="info"><b>Steady Beige</b>#E8D5B5 · RGB 232 213 181<br>CMYK 0 8 22 9<br>The app tile, the app's accent</div></div>
+      <div class="sw"><div class="chip" style="background:#F5F3EF;color:#1B1613;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)">Aa</div><div class="info"><b>Paper</b>#F5F3EF · RGB 245 243 239<br>CMYK 0 1 2 4<br>Light backgrounds</div></div>
+      <div class="sw"><div class="chip" style="background:#F3ECE2;color:#1B1613;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)">Aa</div><div class="info"><b>Linen</b>#F3ECE2 · RGB 243 236 226<br>CMYK 0 3 7 5<br>Letters on dark</div></div>
+      <div class="sw"><div class="chip" style="background:#D9C29C;color:#1B1613">Aa</div><div class="info"><b>Sand</b>#D9C29C · RGB 217 194 156<br>CMYK 0 11 28 15<br>The full stop on dark</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Space and size</h2>
+    <div class="rules">
+      <div class="rule">
+        <h3>Clear space: two full stops</h3>
+        <p>Leave at least two full stops of empty space on every side. It grows and shrinks with the logo.</p>
+        <div class="space"><img src="../logo/steady-wordmark.svg" alt="">
+          <span class="u side"><b></b><b></b></span><span class="u top"><b></b><b></b></span>
+        </div>
+      </div>
+      <div class="rule">
+        <h3>Smallest sizes</h3>
+        <p>Wordmark: 72 px wide on screen, 20 mm in print. Symbol: 24 px, 6 mm.</p>
+        <div class="ladder">
+          <div><img src="../logo/steady-wordmark.svg" width="144" alt="">144</div>
+          <div><img src="../logo/steady-wordmark.svg" width="72" alt="">72</div>
+          <div><img src="../logo/steady-symbol.svg" width="48" alt="">48</div>
+          <div><img src="../logo/steady-symbol.svg" width="24" alt="">24</div>
+        </div>
+      </div>
+      <div class="rule">
+        <h3>Under 48 px, the small cut</h3>
+        <p>Heavier stroke, wider s, bigger full stop: for favicons and the status bar.</p>
+        <div class="ladder">
+          <div><img src="../logo/steady-symbol.svg" width="32" alt="">regular 32</div>
+          <div><img src="../logo/steady-symbol-small.svg" width="32" alt="">small 32</div>
+          <div><img src="../logo/steady-symbol.svg" width="16" alt="">regular 16</div>
+          <div><img src="../logo/steady-symbol-small.svg" width="16" alt="">small 16</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Please don't</h2>
+    <div class="donts">
+      <div class="dont"><img src="../logo/steady-wordmark.svg" style="width:190px;height:40px" alt=""><span class="lab">Stretch or squash it</span></div>
+      <div class="dont"><img src="../logo/steady-wordmark-black.svg" height="40" style="filter: drop-shadow(3px 4px 3px rgba(0,0,0,.45))" alt=""><span class="lab">Add shadows or effects</span></div>
+      <div class="dont"><span style="font: 600 44px 'Segoe UI'; letter-spacing: -1px">Steady.</span><span class="lab">Retype it in a font</span></div>
+      <div class="dont" style="background: linear-gradient(135deg,#8fa3a8,#c9b79c 40%,#6f5e4c)"><img src="../logo/steady-wordmark.svg" height="40" alt=""><span class="lab" style="color:#fff">Put it on busy pictures</span></div>
+      <div class="dont"><img src="../logo/steady-wordmark-black.svg" height="40" style="transform: rotate(-8deg)" alt=""><span class="lab">Rotate it</span></div>
+    </div>
+  </section>
+
+  <footer><span>Steady logo kit · masters in brand/logo, app icons in brand/icons</span><span>steady.</span></footer>
+</div>
+</body>
+</html>

@@ -1,4 +1,9 @@
-# Steady
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/logo/steady-horizontal-reversed.svg">
+    <img alt="Steady" src="brand/logo/steady-horizontal.svg" height="64">
+  </picture>
+</h1>
 
 A calm, private medication reminder for people working through hard things.
 

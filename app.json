@@ -7,6 +7,7 @@
     "orientation": "default",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#F5F3EF",
+    "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.steadyreminder.app",
@@ -14,6 +15,11 @@
     },
     "android": {
       "package": "com.steadyreminder.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
+        "backgroundColor": "#E8D5B5"
+      },
       "permissions": [
         "android.permission.READ_CONTACTS",
         "android.permission.WRITE_CONTACTS"
@@ -50,8 +56,18 @@
           ]
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#7F6440"
+        }
+      ]
     ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
     "extra": {
       "router": {
         "asyncRoutes": {
