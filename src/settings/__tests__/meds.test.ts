@@ -4,7 +4,7 @@ import { createProfile } from '../../db/dao/profile';
 import { listSchedules } from '../../db/dao/schedules';
 import { migrate } from '../../db/migrations';
 import { createTestDb } from '../../test-utils/sqlite';
-import { archiveMed, saveMed, type MedInput } from '../meds';
+import { archiveMed, firstReminderOf, saveMed, type MedInput } from '../meds';
 
 const NOW = '2026-10-25T10:00:00.000Z';
 const OPTS = { now: NOW, timezone: 'UTC', notBefore: '2026-10-01T00:00:00.000Z' };
@@ -60,6 +60,20 @@ describe('saveMed', () => {
     const id = await saveMed(db, PILL, OPTS);
     await saveMed(db, { ...PILL, id, label: 'vit d', form: 'capsule' }, OPTS);
     expect(await listMeds(db)).toEqual([expect.objectContaining({ id, label: 'vit d', form: 'capsule' })]);
+  });
+});
+
+describe('firstReminderOf', () => {
+  it('finds the next dose still to come today', async () => {
+    const db = await freshDb();
+    const id = await saveMed(db, PILL, OPTS);
+    expect(await firstReminderOf(db, id, NOW)).toBe('2026-10-25T20:00:00.000Z');
+  });
+
+  it('moves to tomorrow when today’s time has passed', async () => {
+    const db = await freshDb();
+    const id = await saveMed(db, { ...PILL, times: [8 * 60] }, OPTS);
+    expect(await firstReminderOf(db, id, NOW)).toBe('2026-10-26T08:00:00.000Z');
   });
 });
 

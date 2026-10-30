@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router/js-tabs';
 
 import { HelpSheet } from '../../src/home/HelpSheet';
+import { PillSheet } from '../../src/pills/PillSheet';
 import { FloatingTabBar } from '../../src/ui/FloatingTabBar';
 
 export default function TabsLayout() {
@@ -13,6 +14,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarAccessibilityLabel: 'Settings' }} />
       </Tabs>
       <HelpSheet />
+      <PillSheet />
     </>
   );
 }

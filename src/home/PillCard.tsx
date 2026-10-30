@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { Animated, PanResponder, StyleSheet, View } from 'react-native';
 
 import { useReducedMotion } from '../lib/useReducedMotion';
-import { TRACK } from '../theme/tokens';
+import { radius, TRACK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Glass } from '../ui/Glass';
 import { GlowPressable } from '../ui/GlowPressable';
@@ -35,10 +35,12 @@ interface PillCardProps {
   /** Shown under the name after a comeback. */
   note?: string;
   onMark: (doseId: string) => void;
+  /** With no pills yet, the card itself opens "Add a pill". */
+  onAdd: () => void;
 }
 
 /** The next dose. Swipe right or tap the round check to mark it taken. */
-export function PillCard({ next, nowMs, hasMeds, note, onMark }: PillCardProps) {
+export function PillCard({ next, nowMs, hasMeds, note, onMark, onAdd }: PillCardProps) {
   const theme = useTheme();
   const reduced = useReducedMotion();
   const [width, setWidth] = useState(300);
@@ -73,13 +75,31 @@ export function PillCard({ next, nowMs, hasMeds, note, onMark }: PillCardProps) 
     }),
   );
 
+  if (!hasMeds) {
+    return (
+      <GlowPressable radius={radius.card} accessibilityRole="button" accessibilityLabel="Add your first pill" accessibilityHint="Meds, vitamins or supplements" onPress={onAdd}>
+        <Glass contentStyle={[styles.card, styles.foot]}>
+          <View style={styles.grow}>
+            <AppText tone="secondary" variant="caption">
+              no pills yet
+            </AppText>
+            <AppText variant="heading">Add your first pill</AppText>
+          </View>
+          <View style={[styles.round, { backgroundColor: theme.accent, borderBottomColor: theme.accentDeep, borderBottomWidth: 4 }]}>
+            <Icon name="plus" size={22} color={theme.onAccent} />
+          </View>
+        </Glass>
+      </GlowPressable>
+    );
+  }
+
   if (!next) {
     return (
       <Glass contentStyle={styles.card}>
         <AppText tone="secondary" variant="caption">
-          {hasMeds ? 'today' : 'no meds yet'}
+          today
         </AppText>
-        <AppText variant="heading">{hasMeds ? 'All marked for today.' : 'Add a med in Settings.'}</AppText>
+        <AppText variant="heading">All marked for today.</AppText>
       </Glass>
     );
   }

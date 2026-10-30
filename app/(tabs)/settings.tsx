@@ -84,6 +84,7 @@ export default function SettingsScreen() {
   const db = useSQLiteContext();
   const theme = useTheme();
   const openHelp = useApp((s) => s.openHelp);
+  const openPillSheet = useApp((s) => s.openPillSheet);
   const [data, setData] = useState<SettingsData | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -221,7 +222,7 @@ export default function SettingsScreen() {
             <Row label="Name" value={profile.displayName.trim() || 'Not set'} onPress={() => open('name')} />
           </Section>
 
-          <Section title="Meds and schedules">
+          <Section title="Pills and times">
             {data.meds.map((m) => {
               const s = data.schedules.find((x) => x.medId === m.id);
               const swatch = m.color ?? theme.accent;
@@ -230,12 +231,12 @@ export default function SettingsScreen() {
                   key={m.id}
                   label={m.label ?? 'my pill'}
                   value={scheduleSummary(s?.times ?? [], s?.days ?? [])}
-                  onPress={() => router.push({ pathname: '/edit/med', params: { id: m.id } })}
+                  onPress={() => openPillSheet(m.id)}
                   lead={<View style={[styles.swatch, swatch.startsWith('linear') ? { backgroundImage: swatch } : { backgroundColor: swatch }]} />}
                 />
               );
             })}
-            <Button variant="link" label="+ Add a med" onPress={() => router.push('/edit/med')} style={styles.add} />
+            <Button variant="link" label="+ Add a pill" onPress={() => openPillSheet()} style={styles.add} />
           </Section>
 
           <Section title="Reminders">
@@ -248,7 +249,7 @@ export default function SettingsScreen() {
                   </AppText>
                 ) : null}
                 <AppText variant="caption" tone="secondary">
-                  {"Steady's server keeps only when your reminders are due. Never your name, meds or moods."}
+                  {"Steady's server keeps only when your reminders are due. Never your name, pills or moods."}
                 </AppText>
               </>
             ) : null}
@@ -341,7 +342,7 @@ export default function SettingsScreen() {
         visible={sheet === 'delete'}
         onClose={() => setSheet(null)}
         title="Delete everything?"
-        subtitle="This removes your meds, doses, moods and guardians from this phone. It can't be undone."
+        subtitle="This removes your pills, doses, moods and guardians from this phone. It can't be undone."
       >
         <View style={styles.sheetBody}>
           <Button variant="link" label="Export my data first" onPress={exportNow} style={styles.add} />

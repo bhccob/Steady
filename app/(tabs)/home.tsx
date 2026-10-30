@@ -14,6 +14,9 @@ import { RecapCard } from '../../src/home/RecapCard';
 import { SteadyHandCard } from '../../src/home/SteadyHandCard';
 import { messageUrl, openUrl } from '../../src/lib/contact';
 import { PillCard, type NextDose } from '../../src/home/PillCard';
+import { hasPills } from '../../src/pills/active';
+import { AddedCard } from '../../src/pills/AddedCard';
+import { AddPillRow } from '../../src/pills/AddPillRow';
 import { StreakPath } from '../../src/home/StreakPath';
 import { useHome } from '../../src/home/useHome';
 import { shortDate } from '../../src/lib/time';
@@ -49,6 +52,7 @@ export default function HomeScreen() {
     recapSeen,
   } = useHome();
   const openHelp = useApp((s) => s.openHelp);
+  const openPillSheet = useApp((s) => s.openPillSheet);
   const router = useRouter();
   const [sheet, setSheet] = useState<{ entry: PathEntry; justCollected: boolean } | null>(null);
   const [moodHandled, setMoodHandled] = useState(false);
@@ -202,7 +206,9 @@ export default function HomeScreen() {
 
           {data.bedtime ? <BedtimeCard kind={data.bedtime} onGoodnight={goodnight} onMoreTime={moreTime} /> : null}
 
-          <PillCard next={next} nowMs={nowMs} hasMeds={data.meds.size > 0} note={note} onMark={onMark} />
+          <PillCard next={next} nowMs={nowMs} hasMeds={hasPills(data.meds)} note={note} onMark={onMark} onAdd={() => openPillSheet()} />
+
+          <AddedCard />
 
           {others.map((d) => {
             const taken = d.status === 'taken_ontime' || d.status === 'taken_late';
@@ -216,6 +222,8 @@ export default function HomeScreen() {
               </View>
             );
           })}
+
+          {hasPills(data.meds) ? <AddPillRow onPress={() => openPillSheet()} /> : null}
         </View>
       </ScrollView>
 

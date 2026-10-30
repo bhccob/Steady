@@ -19,7 +19,7 @@ export default function MedsStep() {
     <StepLayout
       step={3}
       title="What do you take?"
-      subtitle={'A name is optional. "my pill" works fine.'}
+      subtitle={'Meds, vitamins or supplements. A name is optional: "my pill" works fine.'}
       footer={<Button label="Continue" onPress={() => router.push(meds.length ? '/onboarding/schedule' : '/onboarding/support')} />}
     >
       {meds.map((m, i) => (
@@ -29,7 +29,7 @@ export default function MedsStep() {
               <AppText variant="label" tone="secondary">
                 Med {i + 1}
               </AppText>
-              <Button variant="link" label="Remove" accessibilityLabel={`Remove med ${i + 1}`} onPress={() => removeMed(m.key)} />
+              <Button variant="link" label="Remove" accessibilityLabel={`Remove pill ${i + 1}`} onPress={() => removeMed(m.key)} />
             </View>
           ) : null}
           <View style={styles.row}>
@@ -50,7 +50,7 @@ export default function MedsStep() {
           </View>
         </View>
       ))}
-      <Button variant="link" label="+ Add another med" onPress={addMed} style={styles.add} />
+      <Button variant="link" label="+ Add another pill" onPress={addMed} style={styles.add} />
     </StepLayout>
   );
 }

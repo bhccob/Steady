@@ -1,4 +1,4 @@
-import { deletePendingDoses } from '../db/dao/doses';
+import { deletePendingDoses, nextPendingDue } from '../db/dao/doses';
 import { archiveMedRow, insertMed, listMeds, updateMed } from '../db/dao/meds';
 import { deleteSchedulesFor, insertSchedule } from '../db/dao/schedules';
 import type { MedForm } from '../db/schema';
@@ -41,6 +41,11 @@ export async function saveMed(db: Db, input: MedInput & { id?: string }, opts: {
   });
   await reconcileDoses(db, opts);
   return id;
+}
+
+/** When a just-saved med's first reminder comes: its next unmarked dose from now on. */
+export function firstReminderOf(db: Db, medId: string, now: string): Promise<string | null> {
+  return nextPendingDue(db, medId, now);
 }
 
 /** Stops a med: no more doses or reminders. Its marked history stays in Calendar and Insights. */

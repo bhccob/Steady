@@ -41,7 +41,7 @@ export default function NotificationsStep() {
         <>
           <AppText variant="caption" tone="secondary" style={styles.center}>
             {web
-              ? "Your phone will ask next. Saying no is fine. To remind you, Steady's server keeps only when your reminders are due. Never your name, meds or moods."
+              ? "Your phone will ask next. Saying no is fine. To remind you, Steady's server keeps only when your reminders are due. Never your name, pills or moods."
               : 'Your phone will ask next. Saying no is fine.'}
           </AppText>
           <Button label="Continue" onPress={allow} />
@@ -77,7 +77,7 @@ export default function NotificationsStep() {
         </View>
         <View style={styles.line}>
           <Icon name="lock" />
-          <AppText style={styles.grow}>{"Never your med's name on the lock screen."}</AppText>
+          <AppText style={styles.grow}>{"Never your pill's name on the lock screen."}</AppText>
         </View>
         <View style={styles.line}>
           <Icon name="moon" />

@@ -5,15 +5,15 @@
   </picture>
 </h1>
 
-A calm, private medication reminder for people working through hard things.
+A calm, private pill reminder for meds, vitamins and supplements, made for people working through hard things.
 
 **[Download for Android](https://github.com/bhccob/steady/releases/tag/v1.0.0-preview.2)**: open the link on your phone, download the `.apk` under Assets, and open it to install. iPhone isn't available yet.
 
-Steady helps you keep track of your meds without shame or pressure: small marks, gentle reminders, and a streak that grows one block per marked day. Everything stays on your phone. There's no account, no email and no tracking.
+Steady helps you keep track of your pills without shame or pressure: small marks, gentle reminders, and a streak that grows one block per marked day. Everything stays on your phone. There's no account, no email and no tracking.
 
 ## What it does
 
-- **Gentle reminders** that never name your medication, never say "missed", and go quiet after a few tries. Mark a dose straight from the notification.
+- **Gentle reminders** that never name your pill, never say "missed", and go quiet after a few tries. Mark a dose straight from the notification.
 - **A streak path** of blocks that recede into the distance, with a trophy at the end of every week.
 - **Calendar and Insights**: your own patterns, shown only to you.
 - **Support levels**: tell Steady what you're working through (optional, private), and it adjusts how often it reminds you and how soon it offers help.

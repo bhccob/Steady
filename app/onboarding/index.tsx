@@ -20,7 +20,7 @@ export default function Welcome() {
           {'Small marks,\nsteadier days.'}
         </AppText>
         <AppText tone="secondary" style={styles.sub}>
-          A gentle way to keep track of your meds, at your own pace. One block for every day you mark.
+          A gentle way to keep track of your pills, at your own pace. One block for every day you mark.
         </AppText>
         <View style={styles.footer}>
           <Button label="Get started" onPress={() => router.push('/onboarding/name')} />

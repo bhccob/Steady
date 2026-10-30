@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 
-import type { SupportLevel } from '../db/schema';
+import type { MedForm, SupportLevel } from '../db/schema';
+
+/** A pill just added: Home shows it once, glowing in its colour, with when its first reminder comes. */
+export interface JustAdded {
+  medId: string;
+  note: string;
+  colour: string;
+  form: MedForm;
+  /** When it was added (ms), so an old note is never shown. */
+  at: number;
+}
 
 /** Why the reach-out sheet opened: the button, a rough check-in, or a dose left open (Steady and Close). */
 export type HelpReason = 'button' | 'rough' | 'overdue';
@@ -16,6 +26,12 @@ interface AppState {
   privacy: { lock: boolean; hide: boolean };
   /** A dose is more than two hours overdue: the emergency button grows more visible (spec §7.1). */
   longOverdue: boolean;
+  /** The "Add a pill" sheet: null when closed, with uid=197609(bhcco) gid=197609 groups=197609 when changing a pill. */
+  pillSheet: null | { id?: string };
+  justAdded: JustAdded | null;
+  openPillSheet: (id?: string) => void;
+  closePillSheet: () => void;
+  setJustAdded: (j: JustAdded | null) => void;
   setLongOverdue: (v: boolean) => void;
   setSupportLevel: (l: SupportLevel) => void;
   setCrisisRegion: (r: string | null) => void;
@@ -32,6 +48,11 @@ export const useApp = create<AppState>((set) => ({
   crisisRegion: null,
   privacy: { lock: false, hide: false },
   longOverdue: false,
+  pillSheet: null,
+  justAdded: null,
+  openPillSheet: (id) => set({ pillSheet: id ? { id } : {} }),
+  closePillSheet: () => set({ pillSheet: null }),
+  setJustAdded: (justAdded) => set({ justAdded }),
   setLongOverdue: (longOverdue) => set({ longOverdue }),
   setSupportLevel: (supportLevel) => set({ supportLevel }),
   setCrisisRegion: (crisisRegion) => set({ crisisRegion }),

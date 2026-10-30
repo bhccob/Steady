@@ -66,6 +66,15 @@ export async function listDosesBetween(db: Db, from: LocalDate, to: LocalDate): 
   return rows.map(fromRow);
 }
 
+/** When a med's next unmarked dose is due, at or after `from`; null when none is planned. */
+export async function nextPendingDue(db: Db, medId: string, from: string): Promise<string | null> {
+  const row = await db.getFirstAsync<{ due_at_utc: string }>(
+    "SELECT due_at_utc FROM doses WHERE med_id = ? AND status = 'pending' AND due_at_utc >= ? ORDER BY due_at_utc LIMIT 1",
+    [medId, from],
+  );
+  return row?.due_at_utc ?? null;
+}
+
 /** Removes a med's doses that were never marked, optionally only those due after `after`. Marked history stays. */
 export async function deletePendingDoses(db: Db, medId: string, after?: string): Promise<void> {
   if (after) await db.runAsync("DELETE FROM doses WHERE med_id = ? AND status = 'pending' AND due_at_utc > ?", [medId, after]);
