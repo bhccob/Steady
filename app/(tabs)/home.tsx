@@ -28,6 +28,7 @@ import { steadyStreak, totalDaysMarked } from '../../src/scoring/streak';
 import { useApp } from '../../src/state/app';
 import { layout } from '../../src/theme/tokens';
 import { Background } from '../../src/ui/Background';
+import { useTabBarSpace } from '../../src/ui/FloatingTabBar';
 import { Glass } from '../../src/ui/Glass';
 import { Icon } from '../../src/ui/Icon';
 import { LoadProblem } from '../../src/ui/LoadProblem';
@@ -35,6 +36,7 @@ import { AppText } from '../../src/ui/Text';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
   const {
     data,
     problem,
@@ -141,7 +143,7 @@ export default function HomeScreen() {
 
   return (
     <Background>
-      <ScrollView scrollEnabled={scrollEnabled} contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 120 }]}>
+      <ScrollView scrollEnabled={scrollEnabled} contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8, paddingBottom: tabBarSpace }]}>
         <View style={styles.column}>
           <View style={styles.header}>
             <AppText variant="heading" accessibilityRole="header">

@@ -230,24 +230,29 @@ function Look({ pill, set, onDone }: { pill: MedInput; set: (p: Partial<MedInput
       <AppText variant="label" tone="secondary">
         Colour
       </AppText>
+      {/* Rows of five, each dot flex: 1. Percent widths that add up to 100% wrap early on Android. */}
       <View style={styles.swatches}>
-        {PILL_COLOURS.map((c) => {
-          const on = c.value === pill.color;
-          return (
-            <Pressable
-              key={c.value}
-              accessibilityRole="radio"
-              accessibilityLabel={c.label}
-              accessibilityState={{ selected: on }}
-              onPress={() => set({ color: c.value })}
-              style={styles.swatchCell}
-            >
-              <View style={[styles.ring, { borderColor: on ? theme.text.primary : 'transparent' }]}>
-                <View style={[styles.swatch, c.value.startsWith('linear-gradient') ? { backgroundImage: c.value } : { backgroundColor: c.value }]} />
-              </View>
-            </Pressable>
-          );
-        })}
+        {PILL_COLOURS.filter((_, i) => i % 5 === 0).map((_, row) => row * 5).map((start) => (
+          <View key={start} style={styles.swatchRow}>
+            {PILL_COLOURS.slice(start, start + 5).map((c) => {
+              const on = c.value === pill.color;
+              return (
+                <Pressable
+                  key={c.value}
+                  accessibilityRole="radio"
+                  accessibilityLabel={c.label}
+                  accessibilityState={{ selected: on }}
+                  onPress={() => set({ color: c.value })}
+                  style={styles.swatchCell}
+                >
+                  <View style={[styles.ring, { borderColor: on ? theme.text.primary : 'transparent' }]}>
+                    <View style={[styles.swatch, c.value.startsWith('linear-gradient') ? { backgroundImage: c.value } : { backgroundColor: c.value }]} />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
       </View>
       <Dropdown label="Shape" value={pill.form} options={MED_FORMS} onChange={(form) => set({ form })} />
       <TextField label="How much (optional)" placeholder="1 tablet" value={pill.amount} onChangeText={(t) => set({ amount: t })} maxLength={30} />
@@ -277,8 +282,9 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   cta: { marginTop: 4 },
   stop: { alignSelf: 'flex-start', paddingHorizontal: 0 },
-  swatches: { flexDirection: 'row', flexWrap: 'wrap', marginTop: -4 },
-  swatchCell: { width: '20%', height: 52, alignItems: 'center', justifyContent: 'center' },
+  swatches: { marginTop: -4 },
+  swatchRow: { flexDirection: 'row' },
+  swatchCell: { flex: 1, height: 52, alignItems: 'center', justifyContent: 'center' },
   ring: { width: 46, height: 46, borderRadius: 99, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   swatch: { width: 36, height: 36, borderRadius: 99, borderWidth: 1, borderColor: 'rgba(27, 22, 19, 0.14)' },
 });

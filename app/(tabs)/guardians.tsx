@@ -19,6 +19,7 @@ import { useApp } from '../../src/state/app';
 import { DECOR_FONT_SCALE, HAIRLINE, layout } from '../../src/theme/tokens';
 import { useTheme } from '../../src/theme/useTheme';
 import { Background } from '../../src/ui/Background';
+import { useTabBarSpace } from '../../src/ui/FloatingTabBar';
 import { BottomSheet } from '../../src/ui/BottomSheet';
 import { Button } from '../../src/ui/Button';
 import { Dropdown } from '../../src/ui/Dropdown';
@@ -41,6 +42,7 @@ function status(g: Guardian): string {
 /** People the user can reach out to, on their terms, and a free crisis line. */
 export default function GuardiansScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
   const db = useSQLiteContext();
   const theme = useTheme();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -117,7 +119,7 @@ export default function GuardiansScreen() {
 
   return (
     <Background>
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 120 }]}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8, paddingBottom: tabBarSpace }]}>
         <View style={styles.column}>
           <View>
             <AppText variant="title" accessibilityRole="header">

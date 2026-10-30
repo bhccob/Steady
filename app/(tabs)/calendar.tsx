@@ -9,6 +9,7 @@ import type { PathEntry } from '../../src/home/path';
 import { InsightsView } from '../../src/insights/InsightsView';
 import { layout } from '../../src/theme/tokens';
 import { Background } from '../../src/ui/Background';
+import { useTabBarSpace } from '../../src/ui/FloatingTabBar';
 import { LoadProblem } from '../../src/ui/LoadProblem';
 import { Segmented } from '../../src/ui/Segmented';
 
@@ -16,6 +17,7 @@ type View_ = 'calendar' | 'insights';
 
 export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
   const { data, problem, reload, mark } = useHistory();
   const [view, setView] = useState<View_>('calendar');
   const [day, setDay] = useState<PathEntry | null>(null);
@@ -27,7 +29,7 @@ export default function CalendarScreen() {
 
   return (
     <Background>
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 120 }]}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8, paddingBottom: tabBarSpace }]}>
         <View style={styles.column}>
           <Segmented
             label="Calendar or Insights"

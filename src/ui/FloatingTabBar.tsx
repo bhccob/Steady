@@ -1,5 +1,6 @@
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApp } from '../state/app';
 import { layout } from '../theme/tokens';
@@ -7,6 +8,13 @@ import { useTheme } from '../theme/useTheme';
 import { GlowPressable } from './GlowPressable';
 import { Icon, type IconName } from './Icon';
 import { AppText } from './Text';
+
+/** Space a tab's content leaves at the bottom so the bar, and "Reach out" above it when shown, never cover it. */
+export function useTabBarSpace(): number {
+  const insets = useSafeAreaInsets();
+  const reachOut = useApp((s) => s.supportLevel === 'close' || s.longOverdue);
+  return insets.bottom + (reachOut ? 180 : 120);
+}
 
 const ICONS: Record<string, IconName> = { home: 'home', calendar: 'calendar', guardians: 'users', settings: 'settings' };
 

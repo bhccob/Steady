@@ -24,6 +24,7 @@ import { LEVEL_NAMES } from '../../src/support/copy';
 import { HAIRLINE, layout } from '../../src/theme/tokens';
 import { useTheme } from '../../src/theme/useTheme';
 import { Background } from '../../src/ui/Background';
+import { useTabBarSpace } from '../../src/ui/FloatingTabBar';
 import { BottomSheet } from '../../src/ui/BottomSheet';
 import { Button } from '../../src/ui/Button';
 import { Icon } from '../../src/ui/Icon';
@@ -80,6 +81,7 @@ function Row({ label, value, onPress, lead }: { label: string; value?: string; o
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
   const router = useRouter();
   const db = useSQLiteContext();
   const theme = useTheme();
@@ -212,7 +214,7 @@ export default function SettingsScreen() {
 
   return (
     <Background>
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 120 }]}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8, paddingBottom: tabBarSpace }]}>
         <View style={styles.column}>
           <AppText variant="title" accessibilityRole="header">
             Settings
