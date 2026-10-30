@@ -91,8 +91,9 @@ self.addEventListener('fetch', (event) => {
       (async () => {
         try {
           const response = await fetch(request);
-          const cache = await caches.open(CACHE);
-          await cache.put('/index.html', response.clone());
+          // Only a real page becomes the offline copy, never an error or Vercel's security
+          // checkpoint (which still shows, so the browser can pass it).
+          if (response.ok) await (await caches.open(CACHE)).put('/index.html', response.clone());
           return response;
         } catch {
           return (await caches.match('/index.html')) ?? Response.error();
