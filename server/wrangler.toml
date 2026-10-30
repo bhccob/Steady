@@ -1,6 +1,9 @@
 name = "steady-reminders"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
+# Served at https://steady-reminders.bhccob.workers.dev only: no per-version preview addresses.
+workers_dev = true
+preview_urls = false
 
 [[d1_databases]]
 binding = "DB"
