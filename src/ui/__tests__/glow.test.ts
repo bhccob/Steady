@@ -26,7 +26,7 @@ describe('glowTarget', () => {
 
 describe('haloShadow', () => {
   it('uses each theme accent line, softly', () => {
-    expect(haloShadow(themes.light)).toBe('0px 0px 20px 4px rgba(154, 125, 82, 0.38)');
-    expect(haloShadow(themes.dark)).toBe('0px 0px 20px 4px rgba(205, 179, 140, 0.38)');
+    expect(haloShadow(themes.light)).toBe('0px 0px 24px 6px rgba(154, 125, 82, 0.55)');
+    expect(haloShadow(themes.dark)).toBe('0px 0px 24px 6px rgba(205, 179, 140, 0.55)');
   });
 });

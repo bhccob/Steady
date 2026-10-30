@@ -21,5 +21,5 @@ export function glowTarget(active: ReadonlySet<GlowCause>, changed: GlowCause, r
 export function haloShadow(theme: Theme): string {
   const hex = theme.accentLine.replace('#', '');
   const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  return `0px 0px 20px 4px rgba(${r}, ${g}, ${b}, 0.38)`;
+  return `0px 0px 24px 6px rgba(${r}, ${g}, ${b}, 0.55)`;
 }

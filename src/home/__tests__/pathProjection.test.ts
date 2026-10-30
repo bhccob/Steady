@@ -13,6 +13,18 @@ describe('blocks', () => {
     expect(blockRadius(size)).toBeCloseTo((size * PATH.faceRatio + PATH.side3d) / 2);
   });
 
+  it('keeps the blocks you can see from overlapping, even a trophy behind a day', () => {
+    const view = { width: 390, height: 292 };
+    for (let k = 0; k < 4; k++) {
+      const near = project(k * PATH.step, zigzag(k), view);
+      const far = project((k + 1) * PATH.step, zigzag(k + 1), view);
+      if (far.opacity < 0.3) break;
+      const nearTop = near.y - (blockSize('day') * PATH.faceRatio * near.scale) / 2;
+      const farBottom = far.y + ((blockSize('trophy') * PATH.faceRatio) / 2 + PATH.side3d) * far.scale;
+      expect(farBottom).toBeLessThanOrEqual(nearTop);
+    }
+  });
+
   it('counts a tap near the edge of the bigger block', () => {
     const p = project(0, zigzag(0), VIEW);
     const tap = { x: p.x + 36 * p.scale, y: p.y };

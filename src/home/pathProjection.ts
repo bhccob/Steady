@@ -4,8 +4,8 @@
 // flat views at computed positions behave the same on every phone.
 
 export const PATH = {
-  /** Distance between blocks along the plane. */
-  step: 120,
+  /** Distance between blocks along the plane: enough that the bigger blocks never overlap. */
+  step: 138,
   perspective: 700,
   tiltDeg: 50,
   /** How far along the plane, from the bottom edge, the focus block sits. */
