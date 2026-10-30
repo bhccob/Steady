@@ -11,6 +11,7 @@ import { insertGuardian, listGuardians, markGuardianAgreed, revokeGuardian, type
 import { getProfile, updateProfile, type Profile } from '../../src/db/dao/profile';
 import { inviteMessage, inviteUrl } from '../../src/guardians/invite';
 import { callUrl, openUrl } from '../../src/lib/contact';
+import { loadData } from '../../src/lib/loadData';
 import type { DraftGuardian } from '../../src/onboarding/draft';
 import { guardianButton } from '../../src/onboarding/guardianStep';
 import { CHANNELS, CONTACT_FIELD, RELATIONSHIPS } from '../../src/onboarding/options';
@@ -23,6 +24,7 @@ import { Button } from '../../src/ui/Button';
 import { Dropdown } from '../../src/ui/Dropdown';
 import { Glass } from '../../src/ui/Glass';
 import { Icon } from '../../src/ui/Icon';
+import { LoadProblem } from '../../src/ui/LoadProblem';
 import { AppText } from '../../src/ui/Text';
 import { TextField } from '../../src/ui/TextField';
 
@@ -48,9 +50,18 @@ export default function GuardiansScreen() {
   const [hint, setHint] = useState('');
   const [removing, setRemoving] = useState<Guardian | null>(null);
 
+  const [problem, setProblem] = useState<string | null>(null);
+
   const load = useCallback(async () => {
-    setProfile(await getProfile(db));
-    setGuardians(await listGuardians(db));
+    const result = await loadData(async () => {
+      const p = await getProfile(db);
+      return p ? { profile: p, guardians: await listGuardians(db) } : null;
+    });
+    if ('data' in result) {
+      setProfile(result.data.profile);
+      setGuardians(result.data.guardians);
+    }
+    setProblem('data' in result ? null : result.problem);
   }, [db]);
 
   useFocusEffect(
@@ -59,7 +70,7 @@ export default function GuardiansScreen() {
     }, [load]),
   );
 
-  if (!profile) return <Background />;
+  if (!profile) return problem ? <LoadProblem what="Guardians" problem={problem} onRetry={load} /> : <Background />;
 
   const detected = getLocales()[0]?.regionCode ?? null;
   const line = crisisLineFor(profile.crisisRegion, detected);

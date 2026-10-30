@@ -10,6 +10,7 @@ import { getProfile, type Profile } from '../db/dao/profile';
 import { listTrophies, type CollectedTrophy } from '../db/dao/trophies';
 import { markDose, type MarkOutcome } from '../home/markDose';
 import { celebrateHaptic, markHaptic } from '../lib/haptics';
+import { loadData } from '../lib/loadData';
 import { addDays, type LocalDate } from '../lib/time';
 import { localDateIn, localMinutesIn } from '../lib/tz';
 import { activePort, syncSoon } from '../notify/port';
@@ -32,24 +33,29 @@ export interface HistoryData {
 export function useHistory() {
   const db = useSQLiteContext();
   const [data, setData] = useState<HistoryData | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const profile = await getProfile(db);
-    if (!profile) return;
-    const now = new Date();
-    const tz = profile.timezone;
-    const today = localDateIn(now, tz);
-    setData({
-      profile,
-      today,
-      firstDay: localDateIn(new Date(profile.createdAt), tz),
-      nowMs: now.getTime(),
-      nowMinutes: localMinutesIn(now, tz),
-      doses: await listDosesBetween(db, '0000-01-01', addDays(today, 21)),
-      meds: new Map((await listMeds(db, { includeInactive: true })).map((m) => [m.id, m])),
-      checkins: await listCheckins(db),
-      trophies: await listTrophies(db),
+    const result = await loadData(async (): Promise<HistoryData | null> => {
+      const profile = await getProfile(db);
+      if (!profile) return null;
+      const now = new Date();
+      const tz = profile.timezone;
+      const today = localDateIn(now, tz);
+      return {
+        profile,
+        today,
+        firstDay: localDateIn(new Date(profile.createdAt), tz),
+        nowMs: now.getTime(),
+        nowMinutes: localMinutesIn(now, tz),
+        doses: await listDosesBetween(db, '0000-01-01', addDays(today, 21)),
+        meds: new Map((await listMeds(db, { includeInactive: true })).map((m) => [m.id, m])),
+        checkins: await listCheckins(db),
+        trophies: await listTrophies(db),
+      };
     });
+    if ('data' in result) setData(result.data);
+    setProblem('data' in result ? null : result.problem);
   }, [db]);
 
   useFocusEffect(
@@ -78,5 +84,5 @@ export function useHistory() {
     [db, load],
   );
 
-  return { data, mark };
+  return { data, problem, reload: load, mark };
 }

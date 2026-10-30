@@ -15,6 +15,7 @@ import type { Mood } from '../db/schema';
 import type { Db } from '../db/types';
 import { reconcileDoses } from '../doses/reconcile';
 import { celebrateHaptic, lightHaptic, markHaptic } from '../lib/haptics';
+import { loadData } from '../lib/loadData';
 import { addDays, DAY_MS, inQuietHours, MINUTE_MS, type LocalDate } from '../lib/time';
 import { localDateIn, localMinutesIn, zonedTimeToUtc } from '../lib/tz';
 import { activePort, syncSoon } from '../notify/port';
@@ -104,10 +105,11 @@ export function useHome() {
   const db = useSQLiteContext();
   const setSupportLevel = useApp((s) => s.setSupportLevel);
   const [data, setData] = useState<HomeData | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const read = useCallback(async (): Promise<HomeData | null> => {
     const profile = await getProfile(db);
-    if (!profile) return;
+    if (!profile) return null;
     const now = new Date();
     const tz = profile.timezone;
     await reconcileDoses(db, { now: now.toISOString(), timezone: tz, notBefore: profile.createdAt });
@@ -144,7 +146,7 @@ export function useHome() {
     useApp
       .getState()
       .setLongOverdue(doses.some((d) => d.dueLocalDate === today && d.status === 'pending' && now.getTime() - Date.parse(d.dueAtUtc) >= LONG_OVERDUE_MS));
-    setData({
+    return {
       profile,
       today,
       nowMs: now.getTime(),
@@ -160,9 +162,17 @@ export function useHome() {
       helpDue,
       steadyHand,
       recap,
-    });
-    refreshWidget(db).catch(() => {});
+    };
   }, [db, setSupportLevel]);
+
+  const load = useCallback(async () => {
+    const result = await loadData(read);
+    if ('data' in result) {
+      setData(result.data);
+      refreshWidget(db).catch(() => {});
+    }
+    setProblem('data' in result ? null : result.problem);
+  }, [db, read]);
 
   useFocusEffect(
     useCallback(() => {
@@ -278,6 +288,7 @@ export function useHome() {
 
   return {
     data,
+    problem,
     reload: load,
     mark,
     pickMood,

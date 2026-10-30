@@ -9,17 +9,18 @@ import type { PathEntry } from '../../src/home/path';
 import { InsightsView } from '../../src/insights/InsightsView';
 import { layout } from '../../src/theme/tokens';
 import { Background } from '../../src/ui/Background';
+import { LoadProblem } from '../../src/ui/LoadProblem';
 import { Segmented } from '../../src/ui/Segmented';
 
 type View_ = 'calendar' | 'insights';
 
 export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
-  const { data, mark } = useHistory();
+  const { data, problem, reload, mark } = useHistory();
   const [view, setView] = useState<View_>('calendar');
   const [day, setDay] = useState<PathEntry | null>(null);
 
-  if (!data) return <Background />;
+  if (!data) return problem ? <LoadProblem what="Calendar" problem={problem} onRetry={reload} /> : <Background />;
 
   const tz = data.profile.timezone;
   const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: tz });

@@ -27,12 +27,14 @@ import { layout } from '../../src/theme/tokens';
 import { Background } from '../../src/ui/Background';
 import { Glass } from '../../src/ui/Glass';
 import { Icon } from '../../src/ui/Icon';
+import { LoadProblem } from '../../src/ui/LoadProblem';
 import { AppText } from '../../src/ui/Text';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const {
     data,
+    problem,
     reload,
     mark,
     pickMood,
@@ -82,7 +84,7 @@ export default function HomeScreen() {
     noteHelpOffered();
   }, [data, moodShowing, eveningShowing, openHelp, noteHelpOffered]);
 
-  if (!data) return <Background />;
+  if (!data) return problem ? <LoadProblem what="Home" problem={problem} onRetry={reload} /> : <Background />;
 
   const { profile, today, nowMs } = data;
   const tz = profile.timezone;

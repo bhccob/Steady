@@ -11,6 +11,7 @@ import { listMeds, type Med } from '../../src/db/dao/meds';
 import { getProfile, updateProfile, type Profile } from '../../src/db/dao/profile';
 import { listSchedules, type Schedule } from '../../src/db/dao/schedules';
 import { listConditions } from '../../src/db/dao/support';
+import { loadData } from '../../src/lib/loadData';
 import { formatHm } from '../../src/lib/time';
 import { cancelAllScheduledNotificationsAsync, dismissAllNotificationsAsync } from '../../src/lib/notifications';
 import { forgetReminders, remindersOn, syncSoon, turnOnReminders } from '../../src/notify/port';
@@ -26,6 +27,7 @@ import { Background } from '../../src/ui/Background';
 import { BottomSheet } from '../../src/ui/BottomSheet';
 import { Button } from '../../src/ui/Button';
 import { Icon } from '../../src/ui/Icon';
+import { LoadProblem } from '../../src/ui/LoadProblem';
 import { AppText } from '../../src/ui/Text';
 import { TextField } from '../../src/ui/TextField';
 import { TimeStepper } from '../../src/ui/TimeStepper';
@@ -83,6 +85,7 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const openHelp = useApp((s) => s.openHelp);
   const [data, setData] = useState<SettingsData | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [name, setName] = useState('');
   const [quiet, setQuiet] = useState({ startMin: 1320, endMin: 420 });
@@ -117,16 +120,20 @@ export default function SettingsScreen() {
   };
 
   const load = useCallback(async () => {
-    const profile = await getProfile(db);
-    if (!profile) return;
-    setData({
-      profile,
-      meds: await listMeds(db),
-      schedules: await listSchedules(db),
-      conditionCount: (await listConditions(db)).length,
-      harderTimeCount: (await listHarderTimes(db)).length,
+    const result = await loadData(async (): Promise<SettingsData | null> => {
+      const profile = await getProfile(db);
+      if (!profile) return null;
+      return {
+        profile,
+        meds: await listMeds(db),
+        schedules: await listSchedules(db),
+        conditionCount: (await listConditions(db)).length,
+        harderTimeCount: (await listHarderTimes(db)).length,
+      };
     });
-    if (Platform.OS === 'web') setWebReminders(await remindersOn());
+    if ('data' in result) setData(result.data);
+    setProblem('data' in result ? null : result.problem);
+    if (Platform.OS === 'web') setWebReminders(await remindersOn().catch(() => false));
   }, [db]);
 
   useFocusEffect(
@@ -136,7 +143,7 @@ export default function SettingsScreen() {
   );
   useEffect(() => useApp.subscribe((s, prev) => s.dataVersion !== prev.dataVersion && load()), [load]);
 
-  if (!data) return <Background />;
+  if (!data) return problem ? <LoadProblem what="Settings" problem={problem} onRetry={load} /> : <Background />;
   const { profile } = data;
 
   const open = (s: Sheet) => {
