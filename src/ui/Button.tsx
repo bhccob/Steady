@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 
 import { layout, radius } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
+import { GlowPressable } from './GlowPressable';
 import { AppText } from './Text';
 
 interface ButtonProps {
@@ -36,7 +37,8 @@ export function Button({ label, onPress, variant = 'primary', icon, accessibilit
 
   const primary = variant === 'primary';
   return (
-    <Pressable
+    <GlowPressable
+      radius={radius.pill}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
@@ -60,7 +62,7 @@ export function Button({ label, onPress, variant = 'primary', icon, accessibilit
           {label}
         </AppText>
       </View>
-    </Pressable>
+    </GlowPressable>
   );
 }
 

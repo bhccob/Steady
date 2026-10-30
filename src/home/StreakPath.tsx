@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Animated, PanResponder, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Animated, PanResponder, Pressable, StyleSheet, View, type GestureResponderEvent, type ViewStyle } from 'react-native';
 
 import { useReducedMotion } from '../lib/useReducedMotion';
 import { DECOR_FONT_SCALE, motion, type Theme } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
+import { GLOW } from '../ui/glow';
+import { GlowHalo } from '../ui/GlowHalo';
 import { Icon } from '../ui/Icon';
 import { AppText } from '../ui/Text';
 import type { PathEntry } from './path';
@@ -101,6 +103,13 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
   });
   const base = useRef(focus * PATH.step);
   const [shift] = useState(() => new Animated.Value(focus * PATH.step));
+  /** The block under a finger or the mouse, which wears the halo. */
+  const [glowIndex, setGlowIndex] = useState<number | null>(null);
+  const blockAt = (x: number, y: number) => {
+    const { view: v, entries: list } = live.current;
+    if (!v) return null;
+    return hitTest({ x, y }, { position: base.current / PATH.step, count: list.length, sizeOf: (k) => sizeOf(list[k]), view: v });
+  };
 
   // The handlers read `live` and `base` only when a touch happens or focus changes, never while rendering.
   // eslint-disable-next-line react-hooks/refs
@@ -116,25 +125,23 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
       // Take the touch at once, so the page's scrolling can't claim it first on Android.
       onStartShouldSetPanResponder: () => true,
       onPanResponderTerminationRequest: () => false,
-      onPanResponderGrant: () => {
+      onPanResponderGrant: (e: GestureResponderEvent) => {
         dragging = false;
+        setGlowIndex(blockAt(e.nativeEvent.locationX, e.nativeEvent.locationY));
       },
       onPanResponderMove: (_, g) => {
         if (!dragging && Math.abs(g.dx) < DRAG_SLOP && Math.abs(g.dy) < DRAG_SLOP) return;
         if (!dragging) {
           dragging = true;
+          setGlowIndex(null);
           live.current.onDragChange?.(true);
         }
         shift.setValue(clamp(base.current - g.dy * DRAG_GAIN));
       },
       onPanResponderRelease: (e, g) => {
+        setGlowIndex(null);
         if (!dragging) {
-          const { view: v, entries: list } = live.current;
-          if (!v) return;
-          const i = hitTest(
-            { x: e.nativeEvent.locationX, y: e.nativeEvent.locationY },
-            { position: base.current / PATH.step, count: list.length, sizeOf: (k) => sizeOf(list[k]), view: v },
-          );
+          const i = blockAt(e.nativeEvent.locationX, e.nativeEvent.locationY);
           if (i !== null) live.current.onTap(i);
           return;
         }
@@ -143,6 +150,7 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
         move(Math.round(clamp(base.current - g.dy * DRAG_GAIN) / PATH.step) * PATH.step);
       },
       onPanResponderTerminate: () => {
+        setGlowIndex(null);
         if (!dragging) return;
         dragging = false;
         live.current.onDragChange?.(false);
@@ -185,6 +193,13 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
     <View
       style={StyleSheet.absoluteFill}
       onLayout={(e) => setView({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}
+      // A mouse resting over a block lights it (web); touches light blocks through the pan handler.
+      onPointerMove={(e) => {
+        if (e.nativeEvent.pointerType !== 'mouse' || e.nativeEvent.buttons !== 0) return;
+        const i = blockAt(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+        setGlowIndex((prev) => (prev === i ? prev : i));
+      }}
+      onPointerLeave={() => setGlowIndex(null)}
       {...pan.panHandlers}
     >
       {view
@@ -206,6 +221,7 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
                     onPress={() => onTap(i)}
                     style={[styles.face, { width: size, height: size * PATH.faceRatio + SIDE, borderRadius: blockRadius(size) }, tileStyle(e, theme)]}
                   >
+                    <GlowHalo on={glowIndex === i} radius={blockRadius(size)} durationMs={glowIndex === i ? GLOW.pressInMs : GLOW.outMs} />
                     <Face e={e} t={theme} />
                   </Pressable>
                 </Animated.View>

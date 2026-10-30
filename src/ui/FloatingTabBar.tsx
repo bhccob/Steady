@@ -1,9 +1,10 @@
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useApp } from '../state/app';
 import { layout } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
+import { GlowPressable } from './GlowPressable';
 import { Icon, type IconName } from './Icon';
 import { AppText } from './Text';
 
@@ -23,7 +24,7 @@ export function FloatingTabBar({ state, descriptors, navigateToTab, insets }: Bo
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom: insets.bottom + 12 }]}>
       {close ? (
-        <Pressable
+        <GlowPressable radius={999}
           accessibilityRole="button"
           accessibilityLabel="Reach out: guardians and crisis lines"
           onPress={() => openHelp('button')}
@@ -31,7 +32,7 @@ export function FloatingTabBar({ state, descriptors, navigateToTab, insets }: Bo
         >
           <Icon name="life-buoy" size={18} />
           <AppText variant="bodyStrong">Reach out</AppText>
-        </Pressable>
+        </GlowPressable>
       ) : null}
       <View style={styles.row}>
         <View style={[styles.bar, glass]} accessibilityRole="tablist">
@@ -39,7 +40,7 @@ export function FloatingTabBar({ state, descriptors, navigateToTab, insets }: Bo
             const focused = state.index === index;
             const options = descriptors[route.key]?.options;
             return (
-              <Pressable
+              <GlowPressable radius={999}
                 key={route.key}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: focused }}
@@ -48,14 +49,14 @@ export function FloatingTabBar({ state, descriptors, navigateToTab, insets }: Bo
                 style={[styles.tab, focused && { backgroundColor: theme.background[0] }]}
               >
                 <Icon name={ICONS[route.name] ?? 'circle'} color={focused ? theme.text.primary : theme.text.secondary} />
-              </Pressable>
+              </GlowPressable>
             );
           })}
         </View>
         {close ? null : (
-          <Pressable accessibilityRole="button" accessibilityLabel="Emergency and crisis lines" onPress={() => openHelp('button')} style={[styles.sos, glass]}>
+          <GlowPressable radius={999} accessibilityRole="button" accessibilityLabel="Emergency and crisis lines" onPress={() => openHelp('button')} style={[styles.sos, glass]}>
             <Icon name="life-buoy" size={20} color={theme.text.secondary} />
-          </Pressable>
+          </GlowPressable>
         )}
       </View>
     </View>

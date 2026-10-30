@@ -1,6 +1,6 @@
 import { BlurView } from 'expo-blur';
 import { useEffect, useState } from 'react';
-import { Animated, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Mood } from '../db/schema';
@@ -9,6 +9,7 @@ import { useReducedMotion } from '../lib/useReducedMotion';
 import { layout } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Button } from '../ui/Button';
+import { GlowPressable } from '../ui/GlowPressable';
 import { Icon, type IconName } from '../ui/Icon';
 import { AppText } from '../ui/Text';
 
@@ -92,8 +93,9 @@ export function MoodPrompt({ visible, name, hour, onPick, onDismiss, onDone, eve
             <>
               <View style={styles.faces}>
                 {FACES.map((f) => (
-                  <Pressable
+                  <GlowPressable
                     key={f.mood}
+                    radius={24}
                     accessibilityRole="button"
                     accessibilityLabel={f.mood}
                     onPress={() => {
@@ -105,7 +107,7 @@ export function MoodPrompt({ visible, name, hour, onPick, onDismiss, onDone, eve
                   >
                     <Icon name={f.icon} size={46} />
                     <AppText>{f.mood}</AppText>
-                  </Pressable>
+                  </GlowPressable>
                 ))}
               </View>
               <Button

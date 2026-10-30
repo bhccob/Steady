@@ -1,10 +1,11 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Animated, PanResponder, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, PanResponder, StyleSheet, View } from 'react-native';
 
 import { useReducedMotion } from '../lib/useReducedMotion';
 import { TRACK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Glass } from '../ui/Glass';
+import { GlowPressable } from '../ui/GlowPressable';
 import { Icon } from '../ui/Icon';
 import { AppText } from '../ui/Text';
 
@@ -121,7 +122,8 @@ export function PillCard({ next, nowMs, hasMeds, note, onMark }: PillCardProps) 
                   {note ?? `${lateMin > 0 ? waitingCopy(lateMin) : 'soon'} · swipe to mark →`}
                 </AppText>
               </View>
-              <Pressable
+              <GlowPressable
+                radius={25}
                 accessibilityRole="button"
                 accessibilityLabel={`Mark ${next.label} as taken, due ${next.timeLabel}`}
                 onPress={() => onMark(next.id)}
@@ -131,7 +133,7 @@ export function PillCard({ next, nowMs, hasMeds, note, onMark }: PillCardProps) 
                 ]}
               >
                 <Icon name="check" size={22} color={theme.onAccent} />
-              </Pressable>
+              </GlowPressable>
             </View>
           ) : (
             <AppText variant="caption" tone="secondary">

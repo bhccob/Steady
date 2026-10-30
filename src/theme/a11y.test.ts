@@ -13,10 +13,11 @@ function tsxFiles(dir: string): string[] {
   });
 }
 
-/** Each `<Pressable ...>` opening tag, up to the `>` that closes it (skipping `=>` and anything in braces). */
+/** Each `<Pressable ...>` or `<GlowPressable ...>` opening tag, up to the `>` that closes it (skipping `=>` and anything in braces). */
 function openingTags(source: string): { line: number; tag: string }[] {
   const tags: { line: number; tag: string }[] = [];
-  for (let i = source.indexOf('<Pressable'); i !== -1; i = source.indexOf('<Pressable', i + 1)) {
+  for (const m of source.matchAll(/<(Glow)?Pressable[\s>]/g)) {
+    const i = m.index;
     let depth = 0;
     let j = i + 1;
     for (; j < source.length; j++) {

@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { HAIRLINE, layout } from '../theme/tokens';
+import { HAIRLINE, layout, radius } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
+import { GlowPressable } from './GlowPressable';
 import { Icon } from './Icon';
 import { AppText } from './Text';
 
@@ -9,7 +10,8 @@ import { AppText } from './Text';
 export function CheckRow({ label, checked, onToggle }: { label: string; checked: boolean; onToggle: () => void }) {
   const theme = useTheme();
   return (
-    <Pressable
+    <GlowPressable
+      radius={radius.control}
       accessibilityRole="checkbox"
       accessibilityLabel={label}
       accessibilityState={{ checked }}
@@ -27,7 +29,7 @@ export function CheckRow({ label, checked, onToggle }: { label: string; checked:
       >
         {checked ? <Icon name="check" size={14} color={theme.onAccent} /> : null}
       </View>
-    </Pressable>
+    </GlowPressable>
   );
 }
 
