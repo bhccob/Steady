@@ -18,6 +18,10 @@
     "preset": "jest-expo",
     "setupFilesAfterEnv": [
       "<rootDir>/src/test-utils/setup.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/server/"
     ]
   },
   "dependencies": {
