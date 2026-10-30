@@ -1,4 +1,4 @@
-import { ACTION_LABELS, COPY, doseBody } from '../copy';
+import { ACTION_LABELS, COPY, doseBody, WEB_COPY } from '../copy';
 
 // Spec §5.5. Every string a notification can show passes these rules.
 const SHAME = /\b(missed|late|forgot|forgotten)\b|don'?t forget/i;
@@ -12,6 +12,7 @@ function everyString(name: string): string[] {
     COPY.windDown(name),
     COPY.stillUp,
     ...Object.values(ACTION_LABELS),
+    ...Object.values(WEB_COPY),
   ];
 }
 

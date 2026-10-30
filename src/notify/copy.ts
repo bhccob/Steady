@@ -16,6 +16,16 @@ export const COPY = {
   stillUp: "it's past your bedtime. rest helps tomorrow feel steadier.",
 };
 
+/** Web only. Shown by the service worker (public/sw-push.js keeps an identical copy). */
+export const WEB_COPY = {
+  /** A reminder arrived for a dose this phone already knows is marked. */
+  allMarked: "you're all marked.",
+  /** A reminder arrived whose own words aren't on this phone. */
+  neutral: "a small mark when you're ready.",
+  /** After the last planned reminder: reminders are only planned when Steady is opened. */
+  keepComing: 'open steady when you can, so your reminders keep coming.',
+};
+
 export const ACTION_LABELS = {
   taken: 'Taken',
   snooze: 'Snooze 30',
