@@ -2,7 +2,6 @@ import { Stack } from 'expo-router';
 import { SQLiteProvider } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DB_NAME, migrate } from '../src/db/migrations';
@@ -12,7 +11,6 @@ import { PrivacyGate } from '../src/privacy/PrivacyGate';
 import { useTheme } from '../src/theme/useTheme';
 import { Background } from '../src/ui/Background';
 import { useDbLock } from '../src/web/dbLock';
-import { Diagnostics } from '../src/web/Diagnostics';
 import { OpenElsewhere } from '../src/web/OpenElsewhere';
 import { persistStorage, registerServiceWorker } from '../src/web/startWeb';
 
@@ -38,7 +36,6 @@ export default function RootLayout() {
         <NotificationBridge />
         <PrivacyGate />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background[0] } }} />
-        {Platform.OS === 'web' ? <Diagnostics /> : null}
       </SQLiteProvider>
     </SafeAreaProvider>
   );
