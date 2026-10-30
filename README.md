@@ -5,29 +5,22 @@
   </picture>
 </h1>
 
-A calm, private pill reminder for meds, vitamins and supplements, made for people working through hard things.
+A calm, private pill reminder for meds, vitamins and supplements.
 
-**[Download for Android](https://github.com/bhccob/steady/releases/tag/v1.0.0-preview.2)**: open the link on your phone, download the `.apk` under Assets, and open it to install. iPhone isn't available yet.
+**[Download for Android](https://github.com/bhccob/Steady/releases)**: open the link on your phone and install the newest `.apk`. Not on iPhone yet.
 
-Steady helps you keep track of your pills without shame or pressure: small marks, gentle reminders, and a streak that grows one block per marked day. Everything stays on your phone. There's no account, no email and no tracking.
+- Gentle reminders that never name your pill or say "missed"
+- A streak that grows one block for every day you mark
+- One tap to someone you trust, or a free 24/7 crisis line
+- Everything stays on your phone: no account, no tracking
 
-## What it does
+Steady isn't medical advice and doesn't replace your doctor or pharmacist.
 
-- **Gentle reminders** that never name your pill, never say "missed", and go quiet after a few tries. Mark a dose straight from the notification.
-- **A streak path** of blocks that recede into the distance, with a trophy at the end of every week.
-- **Calendar and Insights**: your own patterns, shown only to you.
-- **Support levels**: tell Steady what you're working through (optional, private), and it adjusts how often it reminds you and how soon it offers help.
-- **Sleep**: bedtime nudges, and Goodnight to quiet everything until morning.
-- **Reach out**: one tap to people you trust or a free 24/7 crisis line. Steady never contacts anyone for you.
-- **Harder times** (opt-in): during times you find hard, a gentle card with a 60-second breathing exercise.
-- **Privacy**: face or fingerprint lock, hide in the app switcher, export or delete everything.
-- **Android widget**: next dose, a Taken button and today's marks on your home screen.
+## Run it
 
-## Not medical advice
+Built with Expo (SDK 58), React Native and TypeScript.
 
-Steady helps you keep track. It isn't medical advice and doesn't replace care from your doctor or pharmacist. The support-level rule is a simple, visible heuristic, not a clinical assessment.
-
-## Running it
-
-Built with Expo (SDK 58), React Native and TypeScript. Data lives in SQLite on the device.
-
+```bash
+npm install
+npm test
+```
