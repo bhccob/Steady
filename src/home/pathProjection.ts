@@ -17,8 +17,21 @@ export const PATH = {
   /** A block's face is drawn this much shorter than it is wide, as a tilted square looks. */
   faceRatio: 0.62,
   /** The block's thickness below its face, before perspective. */
-  side3d: 8,
+  side3d: 9,
+  /** Width of a day block, and of a week's trophy block. */
+  blockSize: 68,
+  trophySize: 76,
 };
+
+/** How wide a block is drawn, before perspective. Drawing and tapping both use this. */
+export function blockSize(kind: 'day' | 'trophy'): number {
+  return kind === 'trophy' ? PATH.trophySize : PATH.blockSize;
+}
+
+/** Corner radius that makes a block a full pill: half its drawn height, edge included. */
+export function blockRadius(size: number): number {
+  return (size * PATH.faceRatio + PATH.side3d) / 2;
+}
 
 const ZIGZAG = [0, 30, 44, 30, 0, -30, -44, -30];
 const THETA = (PATH.tiltDeg * Math.PI) / 180;

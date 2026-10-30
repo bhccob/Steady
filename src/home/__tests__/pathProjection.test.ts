@@ -1,6 +1,25 @@
-import { hitTest, PATH, project, zigzag } from '../pathProjection';
+import { blockRadius, blockSize, hitTest, PATH, project, zigzag } from '../pathProjection';
 
 const VIEW = { width: 390, height: 262 };
+
+describe('blocks', () => {
+  it('draws day blocks at 68 and trophies at 76', () => {
+    expect(blockSize('day')).toBe(68);
+    expect(blockSize('trophy')).toBe(76);
+  });
+
+  it('rounds a block fully: its radius is half its drawn height', () => {
+    const size = blockSize('day');
+    expect(blockRadius(size)).toBeCloseTo((size * PATH.faceRatio + PATH.side3d) / 2);
+  });
+
+  it('counts a tap near the edge of the bigger block', () => {
+    const p = project(0, zigzag(0), VIEW);
+    const tap = { x: p.x + 36 * p.scale, y: p.y };
+    expect(hitTest(tap, { position: 0, count: 1, sizeOf: () => blockSize('day'), view: VIEW })).toBe(0);
+    expect(hitTest(tap, { position: 0, count: 1, sizeOf: () => 60, view: VIEW })).toBeNull();
+  });
+});
 
 describe('project', () => {
   it('rests the focus block in the lower part of the hero', () => {

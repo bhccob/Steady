@@ -7,7 +7,7 @@ import { useTheme } from '../theme/useTheme';
 import { Icon } from '../ui/Icon';
 import { AppText } from '../ui/Text';
 import type { PathEntry } from './path';
-import { hitTest, PATH, project, sampleRange, zigzag, type Viewport } from './pathProjection';
+import { blockRadius, blockSize, hitTest, PATH, project, sampleRange, zigzag, type Viewport } from './pathProjection';
 
 const SIDE = PATH.side3d;
 /** Finger travel before a touch counts as a drag rather than a tap. */
@@ -15,7 +15,7 @@ const DRAG_SLOP = 6;
 /** How far the path moves per pixel of finger travel. */
 const DRAG_GAIN = 1.6;
 
-const sizeOf = (e: PathEntry | undefined) => (e?.kind === 'trophy' ? 68 : 60);
+const sizeOf = (e: PathEntry | undefined) => blockSize(e?.kind === 'trophy' ? 'trophy' : 'day');
 
 /** Fill, ring and the thickness of the block's lower side. */
 function tileStyle(e: PathEntry, t: Theme): ViewStyle {
@@ -162,7 +162,7 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
     if (!view) return [];
     const samples = sampleRange();
     return shape.split(',').map((kind, i) => {
-      const size = kind === 'trophy' ? 68 : 60;
+      const size = blockSize(kind === 'trophy' ? 'trophy' : 'day');
       const faceH = size * PATH.faceRatio;
       const points = samples.map((rel) => project(rel, zigzag(i), view));
       const rel = Animated.subtract(i * PATH.step, shift);
@@ -204,7 +204,7 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
                     accessibilityLabel={a11yLabel(e)}
                     accessibilityHint="Shows that day"
                     onPress={() => onTap(i)}
-                    style={[styles.face, { width: size, height: size * PATH.faceRatio + SIDE, borderRadius: e.kind === 'trophy' ? 20 : 16 }, tileStyle(e, theme)]}
+                    style={[styles.face, { width: size, height: size * PATH.faceRatio + SIDE, borderRadius: blockRadius(size) }, tileStyle(e, theme)]}
                   >
                     <Face e={e} t={theme} />
                   </Pressable>
