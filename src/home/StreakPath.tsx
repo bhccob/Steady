@@ -9,13 +9,11 @@ import { GlowHalo } from '../ui/GlowHalo';
 import { Icon } from '../ui/Icon';
 import { AppText } from '../ui/Text';
 import type { PathEntry } from './path';
-import { blockRadius, blockSize, hitTest, PATH, project, sampleRange, zigzag, type Viewport } from './pathProjection';
+import { blockRadius, blockSize, dragShift, hitTest, PATH, project, sampleRange, zigzag, type Viewport } from './pathProjection';
 
 const SIDE = PATH.side3d;
 /** Finger travel before a touch counts as a drag rather than a tap. */
 const DRAG_SLOP = 6;
-/** How far the path moves per pixel of finger travel. */
-const DRAG_GAIN = 1.6;
 
 const sizeOf = (e: PathEntry | undefined) => blockSize(e?.kind === 'trophy' ? 'trophy' : 'day');
 
@@ -87,7 +85,7 @@ interface StreakPathProps {
 }
 
 /**
- * The streak as blocks on a path that recedes into the distance. Drag down to look back;
+ * The streak as blocks on a path that recedes into the distance. It follows the finger: push it up to look back;
  * tap a block for that day. The 3D look is computed (see pathProjection.ts), so every block is
  * a flat view: taps land where the block is drawn, and nothing is rotated in 3D.
  */
@@ -136,7 +134,7 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
           setGlowIndex(null);
           live.current.onDragChange?.(true);
         }
-        shift.setValue(clamp(base.current - g.dy * DRAG_GAIN));
+        shift.setValue(clamp(dragShift(base.current, g.dy)));
       },
       onPanResponderRelease: (e, g) => {
         setGlowIndex(null);
@@ -147,7 +145,7 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
         }
         dragging = false;
         live.current.onDragChange?.(false);
-        move(Math.round(clamp(base.current - g.dy * DRAG_GAIN) / PATH.step) * PATH.step);
+        move(Math.round(clamp(dragShift(base.current, g.dy)) / PATH.step) * PATH.step);
       },
       onPanResponderTerminate: () => {
         setGlowIndex(null);
@@ -235,6 +233,6 @@ export function StreakPath({ entries, focus, onTap, onDragChange }: StreakPathPr
 const styles = StyleSheet.create({
   tile: { position: 'absolute', left: 0, top: 0 },
   face: { alignItems: 'center', justifyContent: 'center', gap: 1 },
-  small: { fontSize: 9, lineHeight: 10, fontWeight: '600', letterSpacing: 0.2 },
-  num: { fontSize: 16, lineHeight: 18, fontWeight: '600' },
+  small: { fontSize: 10, lineHeight: 12, fontWeight: '600', letterSpacing: 0.2 },
+  num: { fontSize: 19, lineHeight: 22, fontWeight: '600' },
 });

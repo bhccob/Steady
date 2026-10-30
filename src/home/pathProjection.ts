@@ -5,7 +5,7 @@
 
 export const PATH = {
   /** Distance between blocks along the plane: enough that the bigger blocks never overlap. */
-  step: 138,
+  step: 176,
   perspective: 700,
   tiltDeg: 50,
   /** How far along the plane, from the bottom edge, the focus block sits. */
@@ -17,11 +17,22 @@ export const PATH = {
   /** A block's face is drawn this much shorter than it is wide, as a tilted square looks. */
   faceRatio: 0.62,
   /** The block's thickness below its face, before perspective. */
-  side3d: 9,
+  side3d: 10,
   /** Width of a day block, and of a week's trophy block. */
-  blockSize: 68,
-  trophySize: 76,
+  blockSize: 82,
+  trophySize: 90,
 };
+
+/** How far the path moves per pixel of finger travel. */
+const DRAG_GAIN = 1.6;
+
+/**
+ * Where the path rests while a finger has moved it `dy` pixels (down is positive) from `base`.
+ * It follows the finger: pulling down brings the path toward you, pushing up looks back.
+ */
+export function dragShift(base: number, dy: number): number {
+  return base + dy * DRAG_GAIN;
+}
 
 /** How wide a block is drawn, before perspective. Drawing and tapping both use this. */
 export function blockSize(kind: 'day' | 'trophy'): number {

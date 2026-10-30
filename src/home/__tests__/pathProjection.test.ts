@@ -1,11 +1,11 @@
-import { blockRadius, blockSize, hitTest, PATH, project, zigzag } from '../pathProjection';
+import { blockRadius, blockSize, dragShift, hitTest, PATH, project, zigzag } from '../pathProjection';
 
 const VIEW = { width: 390, height: 262 };
 
 describe('blocks', () => {
-  it('draws day blocks at 68 and trophies at 76', () => {
-    expect(blockSize('day')).toBe(68);
-    expect(blockSize('trophy')).toBe(76);
+  it('draws day blocks at 82 and trophies at 90', () => {
+    expect(blockSize('day')).toBe(82);
+    expect(blockSize('trophy')).toBe(90);
   });
 
   it('rounds a block fully: its radius is half its drawn height', () => {
@@ -14,7 +14,7 @@ describe('blocks', () => {
   });
 
   it('keeps the blocks you can see from overlapping, even a trophy behind a day', () => {
-    const view = { width: 390, height: 292 };
+    const view = { width: 390, height: 340 };
     for (let k = 0; k < 4; k++) {
       const near = project(k * PATH.step, zigzag(k), view);
       const far = project((k + 1) * PATH.step, zigzag(k + 1), view);
@@ -27,9 +27,19 @@ describe('blocks', () => {
 
   it('counts a tap near the edge of the bigger block', () => {
     const p = project(0, zigzag(0), VIEW);
-    const tap = { x: p.x + 36 * p.scale, y: p.y };
+    const tap = { x: p.x + 43 * p.scale, y: p.y };
     expect(hitTest(tap, { position: 0, count: 1, sizeOf: () => blockSize('day'), view: VIEW })).toBe(0);
-    expect(hitTest(tap, { position: 0, count: 1, sizeOf: () => 60, view: VIEW })).toBeNull();
+    expect(hitTest(tap, { position: 0, count: 1, sizeOf: () => 68, view: VIEW })).toBeNull();
+  });
+});
+
+describe('dragShift', () => {
+  it('follows the finger: pushing the path up brings earlier days in', () => {
+    expect(dragShift(10 * PATH.step, -100)).toBeLessThan(10 * PATH.step);
+  });
+
+  it('pulling the path down brings it toward you', () => {
+    expect(dragShift(10 * PATH.step, 100)).toBeGreaterThan(10 * PATH.step);
   });
 });
 

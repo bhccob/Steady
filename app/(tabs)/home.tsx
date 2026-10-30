@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: layout.gutter },
   column: { width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', gap: 10 },
   header: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  hero: { height: 292, marginHorizontal: -layout.gutter },
+  hero: { height: 340, marginHorizontal: -layout.gutter },
   heroText: { position: 'absolute', left: layout.gutter, top: 2, maxWidth: 160, gap: 2 },
   streakRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   streak: { fontSize: 52, lineHeight: 58, fontWeight: '600', letterSpacing: -2 },
