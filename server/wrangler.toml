@@ -5,8 +5,8 @@ compatibility_date = "2026-10-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "steady-reminders"
-# Filled in by `npx wrangler d1 create steady-reminders` (the id isn't a secret).
-database_id = "00000000-0000-0000-0000-000000000000"
+# From `npx wrangler d1 create steady-reminders` (the id isn't a secret).
+database_id = "d29d63bc-94c2-498b-8c20-0121472a8693"
 migrations_dir = "migrations"
 
 # Every minute: send the reminders that are due.
