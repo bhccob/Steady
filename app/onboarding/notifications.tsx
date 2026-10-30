@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { requestPermissionsAsync } from '../../src/lib/notifications';
+import { turnOnReminders } from '../../src/notify/port';
 import { StepLayout } from '../../src/onboarding/StepLayout';
 import { useOnboarding } from '../../src/onboarding/store';
 import { LEVEL_RULES, suggestedLevel } from '../../src/support/level';
@@ -18,11 +19,14 @@ export default function NotificationsStep() {
   const level = chosenLevel ?? suggestedLevel(conditions);
   const next = () => router.push('/onboarding/legal');
   const preview = name.trim() ? `${name.trim()}, a small mark when you're ready.` : "a small mark when you're ready.";
+  // Web notifications on iPhone can't carry buttons: tapping one opens Steady instead.
+  const web = Platform.OS === 'web';
 
   const allow = async () => {
     try {
-      // On the web, reminders are switched on later, from the installed app.
-      if (Platform.OS !== 'web') await requestPermissionsAsync();
+      // On the web this also registers with the reminder server; it must come from this tap.
+      if (web) await turnOnReminders();
+      else await requestPermissionsAsync();
     } finally {
       next();
     }
@@ -32,17 +36,19 @@ export default function NotificationsStep() {
     <StepLayout
       step={10}
       title="Gentle reminders"
-      subtitle="You can mark a dose right from the notification."
+      subtitle={web ? 'Tap a reminder to open Steady and mark it.' : 'You can mark a dose right from the notification.'}
       footer={
         <>
           <AppText variant="caption" tone="secondary" style={styles.center}>
-            Your phone will ask next. Saying no is fine.
+            {web
+              ? "Your phone will ask next. Saying no is fine. To remind you, Steady's server keeps only when your reminders are due. Never your name, meds or moods."
+              : 'Your phone will ask next. Saying no is fine.'}
           </AppText>
           <Button label="Continue" onPress={allow} />
         </>
       }
     >
-      <Glass contentStyle={styles.card} accessible accessibilityLabel={`Example notification: ${preview} Buttons: Taken, Snooze 30.`}>
+      <Glass contentStyle={styles.card} accessible accessibilityLabel={`Example notification: ${preview}${web ? '' : ' Buttons: Taken, Snooze 30.'}`}>
         <View style={styles.appRow}>
           <View style={[styles.appIcon, { backgroundColor: theme.accent, borderColor: theme.accentLine }]} />
           <AppText variant="label">Steady</AppText>
@@ -51,16 +57,18 @@ export default function NotificationsStep() {
           </AppText>
         </View>
         <AppText>{preview}</AppText>
-        <View style={styles.actions}>
-          <View style={[styles.action, { backgroundColor: theme.accent }]}>
-            <AppText variant="bodyStrong" style={{ color: theme.onAccent }}>
-              Taken
-            </AppText>
+        {web ? null : (
+          <View style={styles.actions}>
+            <View style={[styles.action, { backgroundColor: theme.accent }]}>
+              <AppText variant="bodyStrong" style={{ color: theme.onAccent }}>
+                Taken
+              </AppText>
+            </View>
+            <View style={[styles.action, { borderWidth: 1, borderColor: theme.glass.border }]}>
+              <AppText>Snooze 30</AppText>
+            </View>
           </View>
-          <View style={[styles.action, { borderWidth: 1, borderColor: theme.glass.border }]}>
-            <AppText>Snooze 30</AppText>
-          </View>
-        </View>
+        )}
       </Glass>
       <View style={styles.lines}>
         <View style={styles.line}>

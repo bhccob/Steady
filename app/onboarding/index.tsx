@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WelcomePath } from '../../src/onboarding/WelcomePath';
@@ -25,7 +25,7 @@ export default function Welcome() {
         <View style={styles.footer}>
           <Button label="Get started" onPress={() => router.push('/onboarding/name')} />
           <AppText variant="caption" tone="secondary" style={styles.center}>
-            No account. No email. It all stays on this phone.
+            {Platform.OS === 'web' ? 'No account. No email. Only your reminder times leave this phone.' : 'No account. No email. It all stays on this phone.'}
           </AppText>
         </View>
       </View>

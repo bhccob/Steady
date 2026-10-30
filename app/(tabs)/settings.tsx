@@ -13,7 +13,7 @@ import { listSchedules, type Schedule } from '../../src/db/dao/schedules';
 import { listConditions } from '../../src/db/dao/support';
 import { formatHm } from '../../src/lib/time';
 import { cancelAllScheduledNotificationsAsync, dismissAllNotificationsAsync } from '../../src/lib/notifications';
-import { syncSoon } from '../../src/notify/port';
+import { forgetReminders, remindersOn, syncSoon, turnOnReminders } from '../../src/notify/port';
 import { useOnboarding } from '../../src/onboarding/store';
 import { deleteEverything } from '../../src/settings/data';
 import { removeExportFiles, shareExport } from '../../src/settings/exportFile';
@@ -90,6 +90,9 @@ export default function SettingsScreen() {
   const [note, setNote] = useState('');
   const privacy = useApp((s) => s.privacy);
   const [lockReady, setLockReady] = useState<boolean | null>(null);
+  // Web only: whether this device's reminders are turned on, and why not when turning on fails.
+  const [webReminders, setWebReminders] = useState<boolean | null>(null);
+  const [remindNote, setRemindNote] = useState('');
 
   useEffect(() => {
     Promise.all([hasHardwareAsync(), isEnrolledAsync()])
@@ -123,6 +126,7 @@ export default function SettingsScreen() {
       conditionCount: (await listConditions(db)).length,
       harderTimeCount: (await listHarderTimes(db)).length,
     });
+    if (Platform.OS === 'web') setWebReminders(await remindersOn());
   }, [db]);
 
   useFocusEffect(
@@ -165,6 +169,23 @@ export default function SettingsScreen() {
     }
   };
 
+  const turnOn = async () => {
+    setRemindNote('');
+    const result = await turnOnReminders().catch(() => 'unsupported' as const);
+    if (result === 'on') {
+      setWebReminders(true);
+      syncSoon(db);
+    } else {
+      setRemindNote(
+        result === 'denied'
+          ? 'Notifications are blocked for Steady in your browser settings.'
+          : result === 'not-installed'
+            ? 'Add Steady to your Home Screen first, then turn reminders on there.'
+            : "This browser can't show Steady's reminders.",
+      );
+    }
+  };
+
   const deleteAll = async () => {
     if (confirmWord.trim().toLowerCase() !== 'delete') return;
     setSheet(null);
@@ -172,6 +193,7 @@ export default function SettingsScreen() {
     removeExportFiles();
     await cancelAllScheduledNotificationsAsync().catch(() => {});
     await dismissAllNotificationsAsync().catch(() => {});
+    await forgetReminders().catch(() => {});
     useOnboarding.getState().reset();
     useApp.getState().setPrivacy({ lock: false, hide: false });
     router.replace('/onboarding');
@@ -210,6 +232,19 @@ export default function SettingsScreen() {
           </Section>
 
           <Section title="Reminders">
+            {Platform.OS === 'web' ? (
+              <>
+                <Row label="On this device" value={webReminders ? 'On' : 'Off, tap to turn on'} onPress={webReminders ? undefined : turnOn} />
+                {remindNote ? (
+                  <AppText variant="caption" tone="secondary">
+                    {remindNote}
+                  </AppText>
+                ) : null}
+                <AppText variant="caption" tone="secondary">
+                  {"Steady's server keeps only when your reminders are due. Never your name, meds or moods."}
+                </AppText>
+              </>
+            ) : null}
             <Row label="Quiet hours" value={`${formatHm(profile.quietStartMin)} to ${formatHm(profile.quietEndMin)}`} onPress={() => open('quiet')} />
           </Section>
 
@@ -271,7 +306,9 @@ export default function SettingsScreen() {
             <Row label="Version" value={version} />
           </Section>
           <AppText variant="caption" tone="secondary" style={styles.footer}>
-            Everything stays on this phone. No account, no tracking.
+            {Platform.OS === 'web'
+              ? 'Everything stays on this phone except your reminder times. No account, no tracking.'
+              : 'Everything stays on this phone. No account, no tracking.'}
           </AppText>
         </View>
       </ScrollView>

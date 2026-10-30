@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
+import { Platform } from 'react-native';
 
 import { deviceTimeZone } from '../../src/lib/deviceTz';
 import { completeOnboarding } from '../../src/onboarding/complete';
@@ -41,7 +42,9 @@ export default function LegalStep() {
       <AppText>Change or stop a medication only with them.</AppText>
       <AppText>If things feel like too much, a free crisis line is always two taps from Home.</AppText>
       <AppText variant="caption" tone="secondary">
-        Everything stays on this phone. You can export it or delete it any time in Settings.
+        {Platform.OS === 'web'
+          ? 'Everything else stays on this phone. You can export it or delete it any time in Settings.'
+          : 'Everything stays on this phone. You can export it or delete it any time in Settings.'}
       </AppText>
       {error ? (
         <AppText accessibilityRole="alert" accessibilityLiveRegion="polite">
