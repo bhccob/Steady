@@ -11,18 +11,31 @@ import { PrivacyGate } from '../src/privacy/PrivacyGate';
 import { useTheme } from '../src/theme/useTheme';
 import { Background } from '../src/ui/Background';
 import { useDbLock } from '../src/web/dbLock';
+import { opensDatabase } from '../src/web/install';
+import { InstallScreen } from '../src/web/InstallScreen';
 import { OpenElsewhere } from '../src/web/OpenElsewhere';
 import { persistStorage, registerServiceWorker } from '../src/web/startWeb';
+import { useInstall } from '../src/web/useInstall';
 
 // Root: migrations run before any screen renders. Biometric gate arrives in P1.
 export default function RootLayout() {
   const theme = useTheme();
-  const dbLock = useDbLock();
+  const install = useInstall();
+  const dbLock = useDbLock(opensDatabase(install.step));
   usePerfProbe();
   useEffect(() => {
     registerServiceWorker();
     persistStorage();
   }, []);
+
+  // Web only: install comes first, before this tab takes the database (see install.ts).
+  if (!opensDatabase(install.step)) {
+    return (
+      <SafeAreaProvider>
+        <InstallScreen {...install} />
+      </SafeAreaProvider>
+    );
+  }
 
   // Web only: the database can be open in one tab at a time (see dbLock.ts).
   if (dbLock !== 'held') {

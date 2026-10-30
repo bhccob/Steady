@@ -34,12 +34,12 @@ export function holdDbLock(locks: LockManagerLike | undefined, onChange: (state:
   });
 }
 
-/** 'held' right away on phones; on the web, once this tab may open the database. */
-export function useDbLock(): DbLockState {
+/** 'held' right away on phones; on the web, once this tab may open the database. Asks only when `enabled`. */
+export function useDbLock(enabled: boolean): DbLockState {
   const [state, setState] = useState<DbLockState>(Platform.OS === 'web' ? 'waiting' : 'held');
   useEffect(() => {
-    if (Platform.OS !== 'web') return;
+    if (Platform.OS !== 'web' || !enabled) return;
     holdDbLock((navigator as Navigator & { locks?: LockManagerLike }).locks, setState);
-  }, []);
+  }, [enabled]);
   return state;
 }
