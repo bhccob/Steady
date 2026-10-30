@@ -15,12 +15,3 @@ A calm, private pill reminder for meds, vitamins and supplements.
 - Everything stays on your phone: no account, no tracking
 
 Steady isn't medical advice and doesn't replace your doctor or pharmacist.
-
-## Run it
-
-Built with Expo (SDK 58), React Native and TypeScript.
-
-```bash
-npm install
-npm test
-```
