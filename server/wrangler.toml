@@ -1,0 +1,19 @@
+name = "steady-reminders"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "steady-reminders"
+# Filled in by `npx wrangler d1 create steady-reminders` (the id isn't a secret).
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# Every minute: send the reminders that are due.
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+ALLOWED_ORIGIN = "https://steady-beta-five.vercel.app"
+VAPID_SUBJECT = "https://steady-beta-five.vercel.app"
+# VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are secrets: `wrangler secret put` (see scripts/vapid-keys.mjs).
