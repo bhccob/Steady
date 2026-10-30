@@ -11,7 +11,7 @@
     "test": "node --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js",
     "lint": "expo lint",
     "web": "expo start --web",
-    "build:web": "expo export --platform web",
+    "build:web": "expo export --platform web && node scripts/precache.cjs",
     "serve:web": "node scripts/serve-web.cjs"
   },
   "jest": {
