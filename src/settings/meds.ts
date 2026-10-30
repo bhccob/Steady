@@ -33,7 +33,7 @@ export async function saveMed(db: Db, input: MedInput & { id?: string }, opts: {
       await deletePendingDoses(db, input.id, opts.now);
     } else {
       const sortOrder = Math.max(-1, ...(await listMeds(db, { includeInactive: true })).map((m) => m.sortOrder)) + 1;
-      id = (await insertMed(db, { ...fields, sortOrder })).id;
+      id = (await insertMed(db, { ...fields, sortOrder, createdAt: opts.now })).id;
     }
     if (input.times.length) {
       await insertSchedule(db, { medId: id, times: [...new Set(input.times)].sort((a, b) => a - b).map(formatHm), days: input.days });

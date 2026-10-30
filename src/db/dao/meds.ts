@@ -52,12 +52,12 @@ export async function listMeds(db: Db, opts: { includeInactive?: boolean } = {})
 
 export async function insertMed(
   db: Db,
-  input: { label: string | null; doseAmount?: string | null; form?: MedForm; color?: string | null; sortOrder?: number },
+  input: { label: string | null; doseAmount?: string | null; form?: MedForm; color?: string | null; sortOrder?: number; createdAt?: string },
 ): Promise<Med> {
   const id = newId();
   await db.runAsync(
     'INSERT INTO meds (id, label, dose_amount, form, color, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [id, input.label, input.doseAmount ?? null, input.form ?? 'pill', input.color ?? null, input.sortOrder ?? 0, nowIso()],
+    [id, input.label, input.doseAmount ?? null, input.form ?? 'pill', input.color ?? null, input.sortOrder ?? 0, input.createdAt ?? nowIso()],
   );
   return (await getMed(db, id))!;
 }

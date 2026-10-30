@@ -8,7 +8,7 @@ import { planDoses } from './plan';
 /**
  * Spec §5.1: on launch and after schedule changes, make sure every dose for the next
  * `days` days exists (idempotent), and lock anything more than 24h past due.
- * Doses due before `notBefore` (when the user started) are never created.
+ * Doses due before `notBefore` (when the user started), or before a pill was added, are never created.
  * Returns how many new doses were created.
  */
 export async function reconcileDoses(db: Db, opts: { now: string; timezone: string; notBefore: string; days?: number }): Promise<number> {
@@ -23,9 +23,11 @@ export async function reconcileDoses(db: Db, opts: { now: string; timezone: stri
     timezone: opts.timezone,
   });
 
+  // A pill added later starts when it was added: no doses from earlier that day to look missed.
+  const startOf = new Map(meds.map((m) => [m.id, m.createdAt > opts.notBefore ? m.createdAt : opts.notBefore]));
   let created = 0;
   for (const p of planned) {
-    if (p.dueAtUtc < opts.notBefore) continue;
+    if (p.dueAtUtc < (startOf.get(p.medId) ?? opts.notBefore)) continue;
     if (await insertPendingDose(db, p)) created++;
   }
   return created;

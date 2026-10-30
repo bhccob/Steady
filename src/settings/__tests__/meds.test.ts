@@ -3,6 +3,7 @@ import { listMeds } from '../../db/dao/meds';
 import { createProfile } from '../../db/dao/profile';
 import { listSchedules } from '../../db/dao/schedules';
 import { migrate } from '../../db/migrations';
+import { reconcileDoses } from '../../doses/reconcile';
 import { createTestDb } from '../../test-utils/sqlite';
 import { archiveMed, firstReminderOf, saveMed, type MedInput } from '../meds';
 
@@ -29,6 +30,14 @@ describe('saveMed', () => {
     const doses = await dosesOf(db, id);
     expect(doses.length).toBeGreaterThan(0);
     expect(doses[0]!.dueAtUtc).toBe('2026-10-25T20:00:00.000Z');
+  });
+
+  it('never gives a new pill doses from before it was added, even after Home fills in doses again', async () => {
+    const db = await freshDb();
+    const id = await saveMed(db, { ...PILL, times: [8 * 60, 20 * 60] }, OPTS);
+    await reconcileDoses(db, { now: '2026-10-25T11:00:00.000Z', timezone: 'UTC', notBefore: OPTS.notBefore });
+    const today = (await dosesOf(db, id)).filter((d) => d.dueLocalDate === '2026-10-25').map((d) => d.dueAtUtc);
+    expect(today).toEqual(['2026-10-25T20:00:00.000Z']);
   });
 
   it('saves a blank name as "my pill"', async () => {
