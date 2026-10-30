@@ -3,7 +3,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 
 import { getProfile, updateProfile, type Profile } from '../../src/db/dao/profile';
-import { syncSoon } from '../../src/notify/expoPort';
+import { syncSoon } from '../../src/notify/port';
 import type { DraftSleep } from '../../src/onboarding/draft';
 import { StepLayout } from '../../src/onboarding/StepLayout';
 import { SleepForm } from '../../src/support/SleepForm';

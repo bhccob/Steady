@@ -213,7 +213,10 @@ export default function GuardiansScreen() {
 
       <BottomSheet visible={adding} onClose={() => setAdding(false)} title="Add someone" subtitle="They'll be asked first. Either of you can stop any time.">
         <View style={styles.sheetBody}>
-          <Button variant="secondary" label="Pick from contacts" icon={<Icon name="user" size={18} />} onPress={pickContact} />
+          {/* Browsers on iPhone can't open the contacts list; typing it in works everywhere. */}
+          {Platform.OS === 'web' ? null : (
+            <Button variant="secondary" label="Pick from contacts" icon={<Icon name="user" size={18} />} onPress={pickContact} />
+          )}
           <View style={styles.row}>
             <View style={styles.half}>
               <TextField

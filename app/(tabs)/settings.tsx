@@ -13,7 +13,7 @@ import { listSchedules, type Schedule } from '../../src/db/dao/schedules';
 import { listConditions } from '../../src/db/dao/support';
 import { formatHm } from '../../src/lib/time';
 import { cancelAllScheduledNotificationsAsync, dismissAllNotificationsAsync } from '../../src/lib/notifications';
-import { syncSoon } from '../../src/notify/expoPort';
+import { syncSoon } from '../../src/notify/port';
 import { useOnboarding } from '../../src/onboarding/store';
 import { deleteEverything } from '../../src/settings/data';
 import { removeExportFiles, shareExport } from '../../src/settings/exportFile';
@@ -237,20 +237,23 @@ export default function SettingsScreen() {
             ) : null}
           </Section>
 
-          <Section title="Privacy">
-            <Toggle
-              label="Lock with face or fingerprint"
-              hint={lockReady === false ? 'Set up face or fingerprint unlock on your phone first.' : 'Asks when Steady opens, or after it has been away a while.'}
-              value={privacy.lock}
-              onChange={setLock}
-            />
-            <Toggle
-              label="Hide in app switcher"
-              hint={Platform.OS === 'ios' ? 'Blurs Steady in the app switcher.' : 'Shows a blank preview. On Android this also blocks screenshots.'}
-              value={privacy.hide}
-              onChange={setHide}
-            />
-          </Section>
+          {/* The web has no face or fingerprint lock and no app switcher to hide from. */}
+          {Platform.OS === 'web' ? null : (
+            <Section title="Privacy">
+              <Toggle
+                label="Lock with face or fingerprint"
+                hint={lockReady === false ? 'Set up face or fingerprint unlock on your phone first.' : 'Asks when Steady opens, or after it has been away a while.'}
+                value={privacy.lock}
+                onChange={setLock}
+              />
+              <Toggle
+                label="Hide in app switcher"
+                hint={Platform.OS === 'ios' ? 'Blurs Steady in the app switcher.' : 'Shows a blank preview. On Android this also blocks screenshots.'}
+                value={privacy.hide}
+                onChange={setHide}
+              />
+            </Section>
+          )}
 
           <Section title="Your data">
             <Row label="Export my data" value="JSON" onPress={exportNow} />

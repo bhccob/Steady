@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { getProfile, updateProfile, type Profile } from '../../src/db/dao/profile';
 import { listConditions, replaceConditions } from '../../src/db/dao/support';
-import { syncSoon } from '../../src/notify/expoPort';
+import { syncSoon } from '../../src/notify/port';
 import { StepLayout } from '../../src/onboarding/StepLayout';
 import { useApp } from '../../src/state/app';
 import { ConditionPicker } from '../../src/support/ConditionPicker';

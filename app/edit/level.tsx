@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { getProfile, updateProfile } from '../../src/db/dao/profile';
 import { listConditions } from '../../src/db/dao/support';
 import type { SupportLevel } from '../../src/db/schema';
-import { syncSoon } from '../../src/notify/expoPort';
+import { syncSoon } from '../../src/notify/port';
 import { StepLayout } from '../../src/onboarding/StepLayout';
 import { useApp } from '../../src/state/app';
 import { levelReason } from '../../src/support/copy';

@@ -7,7 +7,7 @@ import { getMed } from '../../src/db/dao/meds';
 import { getProfile } from '../../src/db/dao/profile';
 import { listSchedules } from '../../src/db/dao/schedules';
 import { parseHm } from '../../src/lib/time';
-import { syncSoon } from '../../src/notify/expoPort';
+import { syncSoon } from '../../src/notify/port';
 import { MED_FORMS, PILL_COLOURS } from '../../src/onboarding/options';
 import { StepLayout } from '../../src/onboarding/StepLayout';
 import { archiveMed, saveMed, type MedInput } from '../../src/settings/meds';

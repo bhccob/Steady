@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { requestPermissionsAsync } from '../../src/lib/notifications';
 import { StepLayout } from '../../src/onboarding/StepLayout';
@@ -21,7 +21,8 @@ export default function NotificationsStep() {
 
   const allow = async () => {
     try {
-      await requestPermissionsAsync();
+      // On the web, reminders are switched on later, from the installed app.
+      if (Platform.OS !== 'web') await requestPermissionsAsync();
     } finally {
       next();
     }

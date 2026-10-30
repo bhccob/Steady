@@ -12,7 +12,7 @@ import { markDose, type MarkOutcome } from '../home/markDose';
 import { celebrateHaptic, markHaptic } from '../lib/haptics';
 import { addDays, type LocalDate } from '../lib/time';
 import { localDateIn, localMinutesIn } from '../lib/tz';
-import { expoPort, syncSoon } from '../notify/expoPort';
+import { activePort, syncSoon } from '../notify/port';
 import { useApp } from '../state/app';
 
 export interface HistoryData {
@@ -70,7 +70,7 @@ export function useHistory() {
       const outcome = await markDose(db, { doseId, nowUtc: new Date().toISOString() });
       if (outcome?.comeback) celebrateHaptic();
       else if (outcome) markHaptic();
-      expoPort.dismiss([doseId]).catch(() => {});
+      activePort.dismiss([doseId]).catch(() => {});
       syncSoon(db);
       await load();
       return outcome;

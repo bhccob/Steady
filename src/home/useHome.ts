@@ -17,7 +17,7 @@ import { reconcileDoses } from '../doses/reconcile';
 import { celebrateHaptic, lightHaptic, markHaptic } from '../lib/haptics';
 import { addDays, DAY_MS, inQuietHours, MINUTE_MS, type LocalDate } from '../lib/time';
 import { localDateIn, localMinutesIn, zonedTimeToUtc } from '../lib/tz';
-import { expoPort, syncSoon } from '../notify/expoPort';
+import { activePort, syncSoon } from '../notify/port';
 import { steadyHandDue, windowsFor, type Window } from '../patterns/windows';
 import { weekStartOf } from '../rewards/trophies';
 import { useApp } from '../state/app';
@@ -189,7 +189,7 @@ export function useHome() {
       const outcome = await markDose(db, { doseId, nowUtc: new Date().toISOString() });
       if (outcome?.comeback) celebrateHaptic();
       else if (outcome) markHaptic();
-      expoPort.dismiss([doseId]).catch(() => {});
+      activePort.dismiss([doseId]).catch(() => {});
       await load(); // re-syncs reminders, cancelling the rest for this dose
       return outcome;
     },
