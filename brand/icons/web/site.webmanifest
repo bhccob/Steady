@@ -1,6 +1,11 @@
 {
+  "id": "/",
   "name": "Steady",
   "short_name": "Steady",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -20,6 +25,5 @@
     }
   ],
   "theme_color": "#F5F3EF",
-  "background_color": "#F5F3EF",
-  "display": "standalone"
+  "background_color": "#F5F3EF"
 }

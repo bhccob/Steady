@@ -4,7 +4,7 @@
 //
 // From the repo root:
 //   npm install --no-save @resvg/resvg-js@2.6.2
-//   node brand/source/build-logo.cjs [outDir] [assetsDir]   (defaults: brand, assets; "-" skips the app copies)
+//   node brand/source/build-logo.cjs [outDir] [assetsDir] [publicDir]   (defaults: brand, assets, public; "-" skips a copy)
 const fs = require('node:fs');
 const path = require('node:path');
 const { Buffer } = require('node:buffer');
@@ -291,7 +291,7 @@ function stacked(wm, sym, lettersOnly) {
 }
 
 // ---------- build ----------
-function build(outDir, assetsDir) {
+function build(outDir, assetsDir, publicDir) {
   const files = {};
   const put = (rel, data) => { files[rel] = data; };
 
@@ -348,14 +348,15 @@ function build(outDir, assetsDir) {
   put('icons/web/icon-512.png', png(rounded, 512));
   put('icons/web/maskable-512.png', png(svgDoc('0 0 512 512', `<rect width="512" height="512" fill="${C.beige}"/>` +
     place(symOnTile, 512, fitInCircle(symOnTile, 0.36)), 'Steady'), 512));
+  // The web app's manifest: added to a Home Screen, Steady opens full screen, straight into the app.
   put('icons/web/site.webmanifest', JSON.stringify({
-    name: 'Steady', short_name: 'Steady',
+    id: '/', name: 'Steady', short_name: 'Steady', start_url: '/', scope: '/', display: 'standalone', orientation: 'portrait',
     icons: [
       { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
       { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
       { src: '/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
-    theme_color: C.paper, background_color: C.paper, display: 'standalone',
+    theme_color: C.paper, background_color: C.paper,
   }, null, 2) + '\n');
   put('icons/web/head-snippet.html', '<link rel="icon" href="/favicon.ico" sizes="48x48">\n' +
     '<link rel="icon" href="/favicon.svg" type="image/svg+xml">\n<link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
@@ -378,6 +379,13 @@ function build(outDir, assetsDir) {
     fs.mkdirSync(assetsDir, { recursive: true });
     for (const [to, from] of Object.entries(copy)) fs.writeFileSync(path.join(assetsDir, to), files[from]);
   }
+  // The web app's own copies, served from its root (Expo copies public/ into the web build).
+  if (publicDir) {
+    const web = ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'maskable-512.png'];
+    fs.mkdirSync(publicDir, { recursive: true });
+    for (const name of web) fs.writeFileSync(path.join(publicDir, name), files[`icons/web/${name}`]);
+    fs.writeFileSync(path.join(publicDir, 'manifest.webmanifest'), files['icons/web/site.webmanifest']);
+  }
   return Object.keys(files);
 }
 
@@ -386,6 +394,7 @@ module.exports = { C, W, PERIOD, XH, parts, body, wordmarkParts, symbolParts, sC
 if (require.main === module) {
   const out = process.argv[2] || 'brand';
   const assets = process.argv[3] || 'assets';
-  const written = build(out, assets === '-' ? null : assets);
-  console.log(`wrote ${written.length} files to ${out}${assets === '-' ? '' : ` and the app icons to ${assets}`}`);
+  const pub = process.argv[4] || 'public';
+  const written = build(out, assets === '-' ? null : assets, pub === '-' ? null : pub);
+  console.log(`wrote ${written.length} files to ${out}, the app icons to ${assets} and the web icons to ${pub}`);
 }
