@@ -9,6 +9,13 @@ export interface ServerReminder {
   kind: string;
 }
 
+/** The server answered, with an error: 401 means it no longer knows this phone. */
+export class ServerError extends Error {
+  constructor(readonly status: number) {
+    super(`reminder server: ${status}`);
+  }
+}
+
 export interface ReminderApi {
   putInstall(me: Identity, subscription: PushSubscriptionJSON): Promise<void>;
   putReminders(me: Identity, list: ServerReminder[]): Promise<void>;
@@ -22,7 +29,7 @@ export function createApi(baseUrl: string, f: typeof fetch = fetch): ReminderApi
       headers: { 'Content-Type': 'application/json', ...(me ? { Authorization: `Bearer ${me.id}.${me.secret}` } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(`reminder server: ${res.status}`);
+    if (!res.ok) throw new ServerError(res.status);
   };
   return {
     putInstall: (me, subscription) => call('PUT', '/v1/install', null, { id: me.id, secret: me.secret, subscription }),

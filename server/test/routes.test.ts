@@ -10,7 +10,7 @@ const SECRET = 'S'.repeat(43);
 const SUB = { endpoint: 'https://push.example/abc', keys: { p256dh: 'B'.repeat(87), auth: 'C'.repeat(22) } };
 
 let store: ReturnType<typeof memoryStore>;
-const deps = () => ({ store, now: NOW, allowedOrigin: ORIGIN });
+const deps = () => ({ store, now: NOW, allowedOrigin: ORIGIN, ipKey: 'test-ip-key' });
 
 function req(method: string, path: string, body?: unknown, headers: Record<string, string> = {}) {
   return new Request(`https://reminders.example${path}`, {
@@ -79,6 +79,15 @@ describe('routes', () => {
     let last = 0;
     for (let i = 0; i < 31; i++) last = (await handle(req('PUT', '/v1/install/reminders', { reminders: [] }, auth()), deps())).status;
     expect(last).toBe(429);
+  });
+
+  it('rate-limits each address without keeping the address', async () => {
+    let last = 0;
+    for (let i = 0; i < 121; i++) last = (await handle(req('PUT', '/v1/install/reminders', { reminders: [] }), deps())).status;
+    expect(last).toBe(429);
+    const other = await handle(req('PUT', '/v1/install/reminders', { reminders: [] }, { 'CF-Connecting-IP': '198.51.100.1' }), deps());
+    expect(other.status).toBe(401);
+    expect(JSON.stringify(store.dump())).not.toContain('203.0.113.7');
   });
 
   it('deletes an install and its reminders', async () => {

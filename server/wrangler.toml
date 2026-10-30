@@ -17,3 +17,4 @@ crons = ["* * * * *"]
 ALLOWED_ORIGIN = "https://steady-beta-five.vercel.app"
 VAPID_SUBJECT = "https://steady-beta-five.vercel.app"
 # VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are secrets: `wrangler secret put` (see scripts/vapid-keys.mjs).
+# RATE_KEY is a secret too: 32 random bytes, so rate limits keep a keyed hash of each address, not the address.

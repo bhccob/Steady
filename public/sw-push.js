@@ -7,10 +7,10 @@
     keepComing: 'open steady when you can, so your reminders keep coming.',
   };
 
-  /** rec: the reminder kept on this phone; tomb: present when it was cancelled here (marked). */
+  /** rec: the reminder kept on this phone; tomb: present when it was cancelled here, marked or not. */
   function pushNotice(rec, tomb) {
     if (rec) return { body: rec.body, doseIds: rec.doseIds || [] };
-    return { body: tomb ? STRINGS.allMarked : STRINGS.neutral, doseIds: [] };
+    return { body: tomb && tomb.marked === true ? STRINGS.allMarked : STRINGS.neutral, doseIds: [] };
   }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = { pushNotice: pushNotice, STRINGS: STRINGS };

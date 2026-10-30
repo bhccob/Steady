@@ -19,9 +19,11 @@ export interface Deps {
   store: Store;
   now: number;
   allowedOrigin: string;
+  /** Secret: rate limits count a keyed hash of each address, never the address. */
+  ipKey: string;
 }
 
-export async function handle(req: Request, { store, now, allowedOrigin }: Deps): Promise<Response> {
+export async function handle(req: Request, { store, now, allowedOrigin, ipKey }: Deps): Promise<Response> {
   if (req.headers.get('Origin') !== allowedOrigin) return new Response(null, { status: 403 });
   const cors = { 'Access-Control-Allow-Origin': allowedOrigin, Vary: 'Origin' };
   const reply = (status: number) => new Response(null, { status, headers: cors });
@@ -34,7 +36,9 @@ export async function handle(req: Request, { store, now, allowedOrigin }: Deps):
   }
 
   const window = Math.floor(now / WINDOW_MS) * WINDOW_MS;
-  if ((await store.countHit(`ip:${req.headers.get('CF-Connecting-IP') ?? 'unknown'}`, window)) > REQUESTS_PER_IP) return reply(429);
+  // Hashed with the minute, so one address's rows can't be linked from minute to minute.
+  const ip = await hmac(ipKey, `${window}|${req.headers.get('CF-Connecting-IP') ?? 'unknown'}`);
+  if ((await store.countHit(`ip:${ip}`, window)) > REQUESTS_PER_IP) return reply(429);
 
   const path = new URL(req.url).pathname;
 
@@ -111,6 +115,13 @@ async function json(req: Request): Promise<Record<string, any> | null> {
 export async function sha256(text: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hmac(key: string, text: string): Promise<string> {
+  const enc = new TextEncoder();
+  const k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(text)));
+  return [...mac.subarray(0, 16)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /** Compares two hashes in time that doesn't depend on where they differ. */

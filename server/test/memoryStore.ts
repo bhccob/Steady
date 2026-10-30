@@ -37,7 +37,7 @@ export function memoryStore(): Store & { dump(): unknown } {
       return n;
     },
     dump() {
-      return { installs: [...installs.values()], reminders: Object.fromEntries(reminders) };
+      return { installs: [...installs.values()], reminders: Object.fromEntries(reminders), hits: [...hits.keys()] };
     },
   };
 }

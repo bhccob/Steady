@@ -13,13 +13,15 @@ export interface Env {
   VAPID_PUBLIC_KEY: string;
   /** Secret: the VAPID private key as JWK JSON. */
   VAPID_PRIVATE_KEY: string;
+  /** Secret: random; rate limits hash each address with it. */
+  RATE_KEY: string;
 }
 
 const HOUR = 60 * 60 * 1000;
 
 export default {
   async fetch(request, env) {
-    return handle(request as unknown as Request, { store: d1Store(env.DB), now: Date.now(), allowedOrigin: env.ALLOWED_ORIGIN }) as never;
+    return handle(request as unknown as Request, { store: d1Store(env.DB), now: Date.now(), allowedOrigin: env.ALLOWED_ORIGIN, ipKey: env.RATE_KEY }) as never;
   },
   async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(

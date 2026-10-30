@@ -1,24 +1,45 @@
 import { WEB_COPY } from '../../copy';
 import type { Planned } from '../../plan';
+import { ServerError } from '../api';
 import { memoryKv, type Kv } from '../kv';
-import { createWebPushPort } from '../webPushPort';
+import { createWebPushPort, type RegisterResult } from '../webPushPort';
 
 type Sent = { id: string; dueAt: string; kind: string };
 
+const NOW = Date.parse('2026-10-31T12:00:00.000Z');
+const tick = () => new Promise((r) => setTimeout(r, 0));
+
 function fakeApi() {
   const calls: { name: string; args: unknown[] }[] = [];
-  let failing = false;
+  let failing: number | 'offline' | null = null;
+  let failures = Infinity;
+  let holdNext = false;
+  let release: (() => void) | null = null;
   return {
     calls,
-    fail(on: boolean) {
+    /** Every putReminders fails (offline, or with this status), `times` times. */
+    fail(on: number | 'offline' | null, times = Infinity) {
       failing = on;
+      failures = times;
+    },
+    /** The next putReminders waits until released: a list still on its way. */
+    hold() {
+      holdNext = true;
+      return { release: () => release?.() };
     },
     lastList: () => [...calls].reverse().find((c) => c.name === 'putReminders')?.args[1] as Sent[] | undefined,
     async putInstall(...args: unknown[]) {
       calls.push({ name: 'putInstall', args });
     },
     async putReminders(...args: unknown[]) {
-      if (failing) throw new Error('offline');
+      if (holdNext) {
+        holdNext = false;
+        await new Promise<void>((r) => (release = r));
+      }
+      if (failing !== null && failures > 0) {
+        failures--;
+        throw failing === 'offline' ? new Error('offline') : new ServerError(failing);
+      }
       calls.push({ name: 'putReminders', args });
     },
     async deleteInstall(...args: unknown[]) {
@@ -38,21 +59,25 @@ const planned = (over: Partial<Planned> = {}): Planned => ({
 
 let kv: Kv;
 let api: ReturnType<typeof fakeApi>;
+let reregister: jest.Mock<Promise<RegisterResult>, []>;
 let port: ReturnType<typeof createWebPushPort>;
 
 beforeEach(async () => {
   kv = memoryKv();
   api = fakeApi();
-  port = createWebPushPort({ kv, api, permitted: async () => true });
+  reregister = jest.fn(async () => 'ok' as const);
+  port = createWebPushPort({ kv, api, permitted: async () => true, now: () => NOW, reregister: () => reregister() });
   await kv.set('registered', true);
 });
+
+const doses = () => api.lastList()!.filter((r) => r.kind === 'dose');
+const onlyTomb = async () => kv.get<{ at: number; marked?: boolean }>((await kv.keys('tomb:'))[0]!);
 
 describe('webPushPort', () => {
   it('keeps the words on the phone and sends the server only an opaque id, time and kind', async () => {
     await port.schedule(planned());
     await port.flush();
-    const list = api.lastList()!;
-    const dose = list.find((r) => r.kind === 'dose')!;
+    const dose = doses()[0]!;
     expect(dose.id).not.toBe(planned().id);
     expect(dose.id).toMatch(/^[A-Za-z0-9_-]{22}$/);
     expect(dose.dueAt).toBe('2026-11-01T08:00:00.000Z');
@@ -68,7 +93,7 @@ describe('webPushPort', () => {
   it('remembers a cancelled reminder for the service worker', async () => {
     await port.schedule(planned());
     await port.flush();
-    const oid = api.lastList()!.find((r) => r.kind === 'dose')!.id;
+    const oid = doses()[0]!.id;
     await port.cancel(planned().id);
     await port.flush();
     expect(await kv.get(`tomb:${oid}`)).toBeDefined();
@@ -76,15 +101,49 @@ describe('webPushPort', () => {
     expect(api.lastList()!.some((r) => r.id === oid)).toBe(false);
   });
 
+  it('says "all marked" only for a reminder cancelled because its dose was marked', async () => {
+    await port.schedule(planned());
+    await port.dismiss(['d-1']);
+    await port.cancel(planned().id);
+    expect(await onlyTomb()).toMatchObject({ marked: true });
+  });
+
+  it("doesn't claim a dose was marked when its reminder was cancelled for another reason (a snooze, a new time)", async () => {
+    await port.schedule(planned());
+    await port.cancel(planned().id);
+    expect(await onlyTomb()).toMatchObject({ marked: false });
+  });
+
   it("keeps changes pending when the server can't be reached, and sends them later", async () => {
-    api.fail(true);
+    api.fail('offline');
     await port.schedule(planned());
     await port.flush();
-    expect(await kv.get('pending')).toBe(true);
-    api.fail(false);
+    expect(await port.pending()).toBe(true);
+    api.fail(null);
     await port.flush();
-    expect(await kv.get('pending')).toBe(false);
-    expect(api.lastList()!.some((r) => r.kind === 'dose')).toBe(true);
+    expect(await port.pending()).toBe(false);
+    expect(doses().length).toBe(1);
+  });
+
+  it("doesn't send reminders that have already fired", async () => {
+    await port.schedule(planned({ id: 'gone-by', fireAt: '2026-10-31T11:30:00.000Z' }));
+    await port.schedule(planned());
+    await port.flush();
+    expect(doses().map((r) => r.dueAt)).toEqual(['2026-11-01T08:00:00.000Z']);
+  });
+
+  it('still sends a change made while the list was on its way', async () => {
+    const held = api.hold();
+    await port.schedule(planned({ id: 'a' }));
+    const first = port.flush();
+    await tick();
+    await port.schedule(planned({ id: 'b', fireAt: '2026-11-01T09:00:00.000Z' }));
+    const second = port.flush();
+    await tick();
+    held.release();
+    await Promise.all([first, second]);
+    expect(doses().length).toBe(2);
+    expect(await port.pending()).toBe(false);
   });
 
   it('adds one keep-coming notice an hour after the last reminder', async () => {
@@ -115,6 +174,35 @@ describe('webPushPort', () => {
     await port.schedule(planned());
     await port.flush();
     expect(api.calls).toEqual([]);
-    expect(await kv.get('pending')).toBe(true);
+    expect(await port.pending()).toBe(true);
+  });
+});
+
+describe('when the server has forgotten this phone (30 quiet days, or its push address expired)', () => {
+  it('registers again and sends the list', async () => {
+    api.fail(401, 1);
+    await port.schedule(planned());
+    await port.flush();
+    expect(reregister).toHaveBeenCalledTimes(1);
+    expect(doses().length).toBe(1);
+    expect(await port.pending()).toBe(false);
+  });
+
+  it("turns reminders off when it can't register again, so Settings shows Off", async () => {
+    reregister.mockResolvedValue('impossible');
+    api.fail(401);
+    await port.schedule(planned());
+    await port.flush();
+    expect(await kv.get('registered')).toBeUndefined();
+    expect(await port.pending()).toBe(true);
+  });
+
+  it('tries again later when registering fails for now', async () => {
+    reregister.mockResolvedValue('failed');
+    api.fail(401);
+    await port.schedule(planned());
+    await port.flush();
+    expect(await kv.get('registered')).toBe(true);
+    expect(await port.pending()).toBe(true);
   });
 });
