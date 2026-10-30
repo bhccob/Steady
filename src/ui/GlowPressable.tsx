@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
-import { Pressable, type PressableProps } from 'react-native';
+import { Platform, Pressable, type PressableProps } from 'react-native';
 
 import { useReducedMotion } from '../lib/useReducedMotion';
-import { glowTarget, type GlowCause } from './glow';
+import { focusShowsGlow, glowTarget, type GlowCause } from './glow';
 import { GlowHalo } from './GlowHalo';
 
 type GlowPressableProps = PressableProps & {
@@ -58,7 +58,7 @@ export function GlowPressable({
         onHoverOut?.(e);
       }}
       onFocus={(e) => {
-        update('focus', true);
+        if (focusShowsGlow(Platform.OS, (e.nativeEvent as unknown as { target?: Element } | undefined)?.target ?? null)) update('focus', true);
         onFocus?.(e);
       }}
       onBlur={(e) => {

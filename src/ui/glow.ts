@@ -17,9 +17,20 @@ export function glowTarget(active: ReadonlySet<GlowCause>, changed: GlowCause, r
   };
 }
 
-/** The halo itself: the theme's accent line, soft and wide. Drawn once; only its opacity moves. */
-export function haloShadow(theme: Theme): string {
+/**
+ * The halo itself: the theme's accent line, soft and wide. Drawn once; only its opacity moves.
+ * Inside a card (which clips at its edge) it's tight enough to end within the card's padding.
+ */
+export function haloShadow(theme: Theme, size: 'wide' | 'tight' = 'wide'): string {
   const hex = theme.accentLine.replace('#', '');
   const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  return `0px 0px 24px 6px rgba(${r}, ${g}, ${b}, 0.55)`;
+  return size === 'tight' ? `0px 0px 10px 3px rgba(${r}, ${g}, ${b}, 0.55)` : `0px 0px 24px 6px rgba(${r}, ${g}, ${b}, 0.55)`;
+}
+
+/**
+ * Whether gaining focus should light the halo. On the web a mouse click also focuses a button,
+ * which would leave it lit after the pointer leaves; only keyboard focus (:focus-visible) counts.
+ */
+export function focusShowsGlow(platform: string, target: { matches?: (selector: string) => boolean } | null): boolean {
+  return platform !== 'web' || target?.matches?.(':focus-visible') === true;
 }

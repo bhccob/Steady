@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Animated, Easing, Platform, StyleSheet } from 'react-native';
 
 import { useTheme } from '../theme/useTheme';
 import { haloShadow } from './glow';
+import { InsideCard } from './insideCard';
 
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 
@@ -13,6 +14,7 @@ const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
  */
 export function GlowHalo({ on, radius, durationMs }: { on: boolean; radius: number; durationMs: number }) {
   const theme = useTheme();
+  const inCard = useContext(InsideCard);
   const [opacity] = useState(() => new Animated.Value(on ? 1 : 0));
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export function GlowHalo({ on, radius, durationMs }: { on: boolean; radius: numb
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={[StyleSheet.absoluteFill, { borderRadius: radius, boxShadow: haloShadow(theme), opacity }]}
+      style={[StyleSheet.absoluteFill, { borderRadius: radius, boxShadow: haloShadow(theme, inCard ? 'tight' : 'wide'), opacity }]}
     />
   );
 }

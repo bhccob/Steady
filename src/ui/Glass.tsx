@@ -5,6 +5,7 @@ import { StyleSheet, View, type StyleProp, type ViewProps, type ViewStyle } from
 import { usePerf } from '../lib/perf';
 import { radius } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
+import { InsideCard } from './insideCard';
 
 export type GlassVariant = 'card' | 'control' | 'pill';
 
@@ -48,7 +49,7 @@ export function Glass({ variant = 'card', blur = false, rim, style, contentStyle
         )}
         <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.glass.overlay }]} />
         <View style={[{ borderRadius: Math.max(r - rimWidth, 0), backgroundColor: theme.glass.core }, contentStyle]}>
-          {children}
+          <InsideCard.Provider value>{children}</InsideCard.Provider>
         </View>
       </View>
     </View>

@@ -1,5 +1,5 @@
 import { themes } from '../../theme/tokens';
-import { GLOW, glowTarget, haloShadow, type GlowCause } from '../glow';
+import { focusShowsGlow, GLOW, glowTarget, haloShadow, type GlowCause } from '../glow';
 
 const on = (...c: GlowCause[]) => new Set(c);
 
@@ -29,4 +29,15 @@ describe('haloShadow', () => {
     expect(haloShadow(themes.light)).toBe('0px 0px 24px 6px rgba(154, 125, 82, 0.55)');
     expect(haloShadow(themes.dark)).toBe('0px 0px 24px 6px rgba(205, 179, 140, 0.55)');
   });
+
+  it('stays inside a card: the tight halo reaches no further than a card padding (16)', () => {
+    expect(haloShadow(themes.light, 'tight')).toBe('0px 0px 10px 3px rgba(154, 125, 82, 0.55)');
+  });
+});
+
+describe('focusShowsGlow', () => {
+  const el = (focusVisible: boolean) => ({ matches: (s: string) => s === ':focus-visible' && focusVisible });
+  it('always counts focus on a phone', () => expect(focusShowsGlow('android', null)).toBe(true));
+  it('counts keyboard focus on the web', () => expect(focusShowsGlow('web', el(true))).toBe(true));
+  it('ignores the focus a mouse click leaves behind on the web', () => expect(focusShowsGlow('web', el(false))).toBe(false));
 });

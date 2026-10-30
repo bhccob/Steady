@@ -1,10 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
 
 import { usePerf } from '../lib/perf';
 import { useReducedMotion } from '../lib/useReducedMotion';
 import { useTheme } from '../theme/useTheme';
-import { AMBIENT_LAYERS, ambientAt, ambientOn, gradientPosition } from './ambient';
+import { AMBIENT_LAYERS, ambientAt, ambientOn, gradientPosition, type AmbientLayer } from './ambient';
 
 type Size = { width: number; height: number };
 
@@ -17,11 +17,27 @@ export function Background({ children }: { children?: ReactNode }) {
   const theme = useTheme();
   const reduced = useReducedMotion();
   const glassMode = usePerf((s) => s.glassMode);
-  const moving = ambientOn(reduced, glassMode);
   const [view, setView] = useState<Size | null>(null);
+  const [a, b, c] = theme.background;
+
+  return (
+    <View
+      style={[styles.fill, { backgroundColor: a, backgroundImage: `linear-gradient(135deg, ${a}, ${b}, ${c})` }]}
+      onLayout={(e) => setView({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}
+    >
+      <AmbientLayers glows={theme.glows} moving={ambientOn(reduced, glassMode)} width={view?.width ?? 0} height={view?.height ?? 0} />
+      <View style={styles.fill}>{children}</View>
+    </View>
+  );
+}
+
+/**
+ * The four glow layers. Kept apart from Background's children so a screen re-rendering never
+ * rebuilds the native animation graph; it only re-renders when the theme, motion or size changes.
+ */
+const AmbientLayers = memo(function AmbientLayers({ glows, moving, width, height }: { glows: readonly string[]; moving: boolean; width: number; height: number }) {
   // Each layer starts at a different point of its cycle, so they never move in step.
   const [phases] = useState(() => AMBIENT_LAYERS.map((_, i) => new Animated.Value(i / AMBIENT_LAYERS.length)));
-  const [a, b, c] = theme.background;
 
   useEffect(() => {
     if (!moving) return;
@@ -34,33 +50,27 @@ export function Background({ children }: { children?: ReactNode }) {
     return () => loops.forEach((l) => l.stop());
   }, [moving, phases]);
 
-  return (
-    <View
-      style={[styles.fill, { backgroundColor: a, backgroundImage: `linear-gradient(135deg, ${a}, ${b}, ${c})` }]}
-      onLayout={(e) => setView({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}
-    >
-      {AMBIENT_LAYERS.map((layer, i) => {
-        const pose = moving && view ? motionStyle(phases[i]!, layer, view) : null;
-        return (
-          <Animated.View
-            key={i}
-            pointerEvents="none"
-            renderToHardwareTextureAndroid
-            shouldRasterizeIOS
-            style={[
-              styles.layer,
-              { inset: `${-layer.bleed * 100}%`, backgroundImage: `radial-gradient(${gradientPosition(layer)}, ${theme.glows[i]}, transparent 55%)` },
-              pose,
-            ]}
-          />
-        );
-      })}
-      <View style={styles.fill}>{children}</View>
-    </View>
+  const poses = useMemo(
+    () => (moving && width > 0 ? AMBIENT_LAYERS.map((layer, i) => motionStyle(phases[i]!, layer, { width, height })) : null),
+    [moving, width, height, phases],
   );
-}
 
-function motionStyle(phase: Animated.Value, layer: (typeof AMBIENT_LAYERS)[number], view: Size) {
+  return AMBIENT_LAYERS.map((layer, i) => (
+    <Animated.View
+      key={i}
+      pointerEvents="none"
+      renderToHardwareTextureAndroid
+      shouldRasterizeIOS
+      style={[
+        styles.layer,
+        { inset: `${-layer.bleed * 100}%`, backgroundImage: `radial-gradient(${gradientPosition(layer)}, ${glows[i]}, transparent 55%)` },
+        poses?.[i],
+      ]}
+    />
+  ));
+});
+
+function motionStyle(phase: Animated.Value, layer: AmbientLayer, view: Size) {
   const from = ambientAt(layer, 0, view);
   const to = ambientAt(layer, 1, view);
   const along = (key: keyof typeof from) => phase.interpolate({ inputRange: [0, 1], outputRange: [from[key], to[key]] });
