@@ -145,4 +145,30 @@ describe('backups', () => {
     await expect(open(KEY, 'account-2', sealed)).rejects.toThrow();
     await expect(open(KEY, 'account-1', { ...sealed, body: sealed.body.slice(0, -4) + 'AAAA' })).rejects.toThrow();
   });
+
+  it('seals with a key written the way scripts/random-key.mjs writes it', async () => {
+    const urlKey = '-_'.repeat(21) + 'A';
+    const bytes = fromBase64(await packed({ a: 1 }));
+    expect(await open(urlKey, 'account-1', await seal(urlKey, 'account-1', bytes))).toEqual(bytes);
+  });
+
+  it('writes and reads base64 of every short length', () => {
+    for (let n = 0; n < 6; n++) {
+      const bytes = new Uint8Array(n).map((_, i) => 250 - i * 61);
+      expect(toBase64(bytes)).toBe(btoa(String.fromCharCode(...bytes)));
+      expect(fromBase64(toBase64(bytes))).toEqual(bytes);
+    }
+  });
+
+  it('notes when a device was last seen at most once a day, which saves a write on every request', async () => {
+    const token = await signIn(DEVICE_A);
+    const signedInAt = now;
+    const lastSeen = () => (store.dump() as { sessions: { lastSeen: number }[] }).sessions[0]!.lastSeen;
+    now += 60 * 60_000;
+    expect((await call('GET', '/v1/account', undefined, token)).status).toBe(200);
+    expect(lastSeen()).toBe(signedInAt);
+    now += 24 * 60 * 60_000;
+    expect((await call('GET', '/v1/account', undefined, token)).status).toBe(200);
+    expect(lastSeen()).toBe(now);
+  });
 });

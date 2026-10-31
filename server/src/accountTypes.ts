@@ -67,4 +67,6 @@ export interface AccountStore {
   /** Moves the latest backup to slot 1, then writes this one as slot 0. */
   putBackup(b: StoredBackup): Promise<void>;
   getBackup(accountId: string, slot: 0 | 1): Promise<StoredBackup | null>;
+  /** When the latest backup was saved, without reading the backup. */
+  backupSavedAt(accountId: string): Promise<number | null>;
 }

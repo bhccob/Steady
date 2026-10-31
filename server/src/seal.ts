@@ -19,21 +19,38 @@ export async function open(key: string, accountId: string, sealed: { iv: string;
   return new Uint8Array(bytes);
 }
 
-function aesKey(key: string): Promise<CryptoKey> {
-  return crypto.subtle.importKey('raw', fromBase64(key).slice(0, 32), 'AES-GCM', false, ['encrypt', 'decrypt']);
+// Imported once per Worker instance rather than on every request.
+const aesKeys = new Map<string, CryptoKey>();
+
+/** The key is base64url, as scripts/random-key.mjs writes it; plain base64 works too. */
+async function aesKey(key: string): Promise<CryptoKey> {
+  let k = aesKeys.get(key);
+  if (!k) {
+    k = await crypto.subtle.importKey('raw', fromBase64(key.replace(/-/g, '+').replace(/_/g, '/')).slice(0, 32), 'AES-GCM', false, ['encrypt', 'decrypt']);
+    aesKeys.set(key, k);
+  }
+  return k;
 }
 
+// Cloudflare's runtime reads and writes base64 natively, which keeps a big backup inside the free
+// plan's CPU time. Node, where the tests run, doesn't have it yet, so it gets the JS below.
+const native = {
+  from: (Uint8Array as unknown as { fromBase64?: (text: string) => Uint8Array<ArrayBuffer> }).fromBase64,
+  to: (Uint8Array.prototype as unknown as { toBase64?: (this: Uint8Array) => string }).toBase64,
+};
+
 export function toBase64(bytes: Uint8Array): string {
-  // apply with small chunks: spreading big chunks into fromCharCode took most of a backup's CPU time.
+  if (native.to) return native.to.call(bytes);
+  // apply with small chunks: spreading big chunks into fromCharCode is much slower.
   let s = '';
   for (let i = 0; i < bytes.length; i += 0x1000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x1000) as unknown as number[]);
   return btoa(s);
 }
 
-/** Reads base64 or base64url, padded or not. */
+/** Reads base64, padded or not. */
 export function fromBase64(text: string): Uint8Array<ArrayBuffer> {
-  const b64 = text.replace(/-/g, '+').replace(/_/g, '/');
-  const bin = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4));
+  if (native.from) return native.from.call(Uint8Array, text);
+  const bin = atob(text + '='.repeat((4 - (text.length % 4)) % 4));
   const out = new Uint8Array(new ArrayBuffer(bin.length));
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;

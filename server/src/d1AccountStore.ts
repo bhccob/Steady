@@ -144,6 +144,10 @@ export function d1AccountStore(db: D1Database): AccountStore {
           .bind(b.accountId, b.deviceId, b.savedAt, b.schemaVersion, b.iv, b.body),
       ]);
     },
+    async backupSavedAt(accountId) {
+      const row = await db.prepare('SELECT saved_at FROM backups WHERE account_id = ? AND slot = 0').bind(accountId).first<{ saved_at: number }>();
+      return row?.saved_at ?? null;
+    },
     async getBackup(accountId, slot) {
       const row = await db.prepare('SELECT * FROM backups WHERE account_id = ? AND slot = ?').bind(accountId, slot).first<BackupRow>();
       return row ? toBackup(row) : null;

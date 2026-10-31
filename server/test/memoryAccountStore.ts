@@ -75,6 +75,9 @@ export function memoryAccountStore(): AccountStore & { dump(): unknown } {
     async noteDevice(accountId, deviceId) {
       devices.add(deviceKey(accountId, deviceId));
     },
+    async backupSavedAt(accountId) {
+      return backups.get(backupKey(accountId, 0))?.savedAt ?? null;
+    },
     async putBackup(b) {
       const latest = backups.get(backupKey(b.accountId, 0));
       if (latest) backups.set(backupKey(b.accountId, 1), { ...latest, slot: 1 });

@@ -34,6 +34,8 @@ const CODES_PER_IP_HOUR = 10;
 const EMAILS_PER_DAY = 90;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
+/** A session's last-seen time is written at most this often: the day is enough, and it saves a write on every request. */
+const TOUCH_EVERY_MS = DAY;
 /**
  * D1 rows top out at 2 MB and a sealed body is about as long as the packed backup it seals, so a
  * bigger body is refused rather than failing in the database. A year of history packs to about 100 KB.
@@ -129,24 +131,23 @@ export async function handleAccount(req: Request, deps: AccountDeps): Promise<Re
     }
     await store.noteDevice(account.id, deviceId);
 
-    const latest = await store.getBackup(account.id, 0);
+    const savedAt = await store.backupSavedAt(account.id);
     // With no backup yet there is nothing to protect: the device signing in is the one that backs up.
-    if (!latest && account.activeDevice !== deviceId) await store.setActiveDevice(account.id, deviceId);
+    if (savedAt === null && account.activeDevice !== deviceId) await store.setActiveDevice(account.id, deviceId);
 
     const token = randomId(32);
     await store.createSession({ tokenHash: await sha256(token), accountId: account.id, deviceId, createdAt: now, lastSeen: now });
-    return reply(200, { token, isNew, hasBackup: latest !== null, savedAt: latest?.savedAt ?? null });
+    return reply(200, { token, isNew, hasBackup: savedAt !== null, savedAt });
   }
 
   // Everything below needs a signed-in device.
   const session = await authorise(req, store);
   if (!session) return reply(401);
-  await store.touchSession(session.tokenHash, now);
+  if (now - session.lastSeen >= TOUCH_EVERY_MS) await store.touchSession(session.tokenHash, now);
   const { account } = session;
 
   if (req.method === 'GET' && path === '/v1/account') {
-    const latest = await store.getBackup(account.id, 0);
-    return reply(200, { active: account.activeDevice === session.deviceId, savedAt: latest?.savedAt ?? null });
+    return reply(200, { active: account.activeDevice === session.deviceId, savedAt: await store.backupSavedAt(account.id) });
   }
 
   if (req.method === 'GET' && path === '/v1/account/backup') {

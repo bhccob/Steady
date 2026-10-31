@@ -117,10 +117,17 @@ export async function sha256(text: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Imported once per Worker instance rather than on every request.
+const hmacKeys = new Map<string, CryptoKey>();
+
 /** Keyed hash, first 16 bytes as hex. */
 export async function hmac(key: string, text: string): Promise<string> {
   const enc = new TextEncoder();
-  const k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  let k = hmacKeys.get(key);
+  if (!k) {
+    k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    hmacKeys.set(key, k);
+  }
   const mac = new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(text)));
   return [...mac.subarray(0, 16)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
