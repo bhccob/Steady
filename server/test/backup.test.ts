@@ -92,6 +92,12 @@ describe('backups', () => {
     expect(await (await call('GET', '/v1/account', undefined, a)).json()).toMatchObject({ active: false });
   });
 
+  it('lets a second device back up when the account has no backup yet', async () => {
+    await signIn(DEVICE_A);
+    const b = await signIn(DEVICE_B);
+    expect((await call('PUT', '/v1/account/backup', { schemaVersion: 7, data: exportOf() }, b)).status).toBe(204);
+  });
+
   it('signs out one device, then every device', async () => {
     const a = await signIn(DEVICE_A);
     const b = await signIn(DEVICE_B);

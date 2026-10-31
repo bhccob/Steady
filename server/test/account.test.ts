@@ -149,6 +149,23 @@ describe('codes and signing in', () => {
     for (const m of mail) for (const word of ['pill', 'mood', 'med']) expect(`${m.subject} ${m.text}`.toLowerCase()).not.toContain(word);
   });
 
+  it('lets one address ask for at most 10 codes an hour, whatever the emails', async () => {
+    for (let i = 0; i < 10; i++) expect((await askCode(`p${i}@example.com`)).status).toBe(204);
+    expect((await askCode('p10@example.com')).status).toBe(429);
+    now += 60 * 60_000;
+    expect((await askCode('p11@example.com')).status).toBe(204);
+  });
+
+  it("stops sending sign-in emails before the email service's daily limit", async () => {
+    for (let i = 0; i < 90; i++) {
+      const res = await handleAccount(req('POST', '/v1/account/code', { email: `d${i}@example.com`, consent: true }, { Origin: ORIGIN }, `198.51.100.${i}`), deps());
+      expect(res.status).toBe(204);
+    }
+    const over = await handleAccount(req('POST', '/v1/account/code', { email: 'late@example.com', consent: true }, { Origin: ORIGIN }, '192.0.2.1'), deps());
+    expect(over.status).toBe(429);
+    expect(mail).toHaveLength(90);
+  });
+
   it('rate-limits account requests per address', async () => {
     let last = 0;
     for (let i = 0; i < 121; i++) last = (await handleAccount(req('POST', '/v1/account/code', { email: `p${i}@example.com`, consent: true }), deps())).status;

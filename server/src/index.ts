@@ -30,8 +30,6 @@ export interface Env {
   MAIL_MODE?: string;
 }
 
-const HOUR = 60 * 60 * 1000;
-
 export default {
   async fetch(request, env) {
     if (new URL(request.url).pathname.startsWith('/v1/account')) {
@@ -55,7 +53,7 @@ export default {
         const now = Date.now();
         const sender = webPushSender({ privateJwk: env.VAPID_PRIVATE_KEY, publicKey: env.VAPID_PUBLIC_KEY, subject: env.VAPID_SUBJECT });
         const result = await runDue({ store: d1Store(env.DB), sender, now });
-        await pruneHits(env.DB, now - HOUR);
+        await pruneHits(env.DB, now);
         await pruneAccounts(env.DB, now);
         // Counts only: no ids, times or addresses in the logs.
         if (result.sent || result.gone || result.dropped) console.log(JSON.stringify(result));

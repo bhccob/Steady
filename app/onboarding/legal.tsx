@@ -3,6 +3,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { Platform } from 'react-native';
 
+import { legalDataNote } from '../../src/account/copy';
 import { deviceTimeZone } from '../../src/lib/deviceTz';
 import { completeOnboarding } from '../../src/onboarding/complete';
 import { StepLayout } from '../../src/onboarding/StepLayout';
@@ -18,6 +19,7 @@ export default function LegalStep() {
   const reset = useOnboarding((s) => s.reset);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const signedIn = useApp((s) => s.account !== null);
 
   const finish = async () => {
     if (saving) return;
@@ -45,9 +47,7 @@ export default function LegalStep() {
       <AppText>Change or stop a medication only with them.</AppText>
       <AppText>If things feel like too much, a free crisis line is always two taps from Home.</AppText>
       <AppText variant="caption" tone="secondary">
-        {Platform.OS === 'web'
-          ? 'Everything else stays on this phone. You can export it or delete it any time in Settings.'
-          : 'Everything stays on this phone. You can export it or delete it any time in Settings.'}
+        {legalDataNote(signedIn, Platform.OS === 'web')}
       </AppText>
       {error ? (
         <AppText accessibilityRole="alert" accessibilityLiveRegion="polite">

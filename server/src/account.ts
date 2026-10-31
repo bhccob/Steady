@@ -28,6 +28,12 @@ const CODE_TRIES = 5;
 const RESEND_AFTER_MS = 30 * 1000;
 const CODES_PER_HOUR = 5;
 const REQUESTS_PER_IP = 120;
+/** Codes one network address may ask for in an hour, whatever the emails. */
+const CODES_PER_IP_HOUR = 10;
+/** Emails a day across everyone, under Resend's free 100, so no one can use up the day's sign-ins. */
+const EMAILS_PER_DAY = 90;
+const HOUR = 60 * MIN;
+const DAY = 24 * HOUR;
 /** The biggest backup accepted, as JSON text (spec: 10 MB). */
 const MAX_BACKUP_CHARS = 10_000_000;
 /** D1 rows top out at 2 MB; a sealed body this big is refused rather than failing in the database. */
@@ -79,7 +85,11 @@ export async function handleAccount(req: Request, deps: AccountDeps): Promise<Re
     if (!email || body?.consent !== true) return reply(400);
     const hash = await emailHash(email);
     if ((await store.codesSentSince(hash, now - RESEND_AFTER_MS)) > 0) return reply(429);
-    if ((await store.codesSentSince(hash, now - 60 * MIN)) >= CODES_PER_HOUR) return reply(429);
+    if ((await store.codesSentSince(hash, now - HOUR)) >= CODES_PER_HOUR) return reply(429);
+    const hour = Math.floor(now / HOUR) * HOUR;
+    const sender = await hmac(ipKey, `${hour}|${req.headers.get('CF-Connecting-IP') ?? 'unknown'}`);
+    if ((await hits.countHit(`code:${sender}`, hour)) > CODES_PER_IP_HOUR) return reply(429);
+    if ((await hits.countHit('day:emails', Math.floor(now / DAY) * DAY)) > EMAILS_PER_DAY) return reply(429);
     const code = sixDigits();
     await store.putCode({ emailHash: hash, codeHash: await codeHash(hash, code), expiresAt: now + CODE_LIFE_MS, tries: 0, sentAt: now });
     await store.noteCodeSent(hash, now);
@@ -110,15 +120,18 @@ export async function handleAccount(req: Request, deps: AccountDeps): Promise<Re
     if (!account) {
       account = { id: randomId(16), emailHash: hash, activeDevice: deviceId, createdAt: now };
       await store.createAccount(account);
-    } else {
-      if (!account.activeDevice) await store.setActiveDevice(account.id, deviceId);
-      if (!(await store.knowsDevice(account.id, deviceId))) await mailer.send(email, NEW_DEVICE_SUBJECT, NEW_DEVICE_TEXT);
+    } else if (!(await store.knowsDevice(account.id, deviceId))) {
+      // Counts against the day's emails too, but never blocks signing in.
+      if ((await hits.countHit('day:emails', Math.floor(now / DAY) * DAY)) <= EMAILS_PER_DAY) await mailer.send(email, NEW_DEVICE_SUBJECT, NEW_DEVICE_TEXT);
     }
     await store.noteDevice(account.id, deviceId);
 
+    const latest = await store.getBackup(account.id, 0);
+    // With no backup yet there is nothing to protect: the device signing in is the one that backs up.
+    if (!latest && account.activeDevice !== deviceId) await store.setActiveDevice(account.id, deviceId);
+
     const token = randomId(32);
     await store.createSession({ tokenHash: await sha256(token), accountId: account.id, deviceId, createdAt: now, lastSeen: now });
-    const latest = await store.getBackup(account.id, 0);
     return reply(200, { token, isNew, hasBackup: latest !== null, savedAt: latest?.savedAt ?? null });
   }
 

@@ -5,7 +5,8 @@ import { exportData } from '../../settings/data';
 import { saveMed } from '../../settings/meds';
 import { createTestDb } from '../../test-utils/sqlite';
 import type { AccountApi } from '../api';
-import { hasLocalData, restoreFromBackup } from '../flow';
+import { useApp } from '../../state/app';
+import { forgetAccountHere, hasLocalData, restoreChoices, restoreFromBackup } from '../flow';
 
 const NOW = '2026-10-25T10:00:00.000Z';
 
@@ -42,5 +43,27 @@ describe('restoreFromBackup', () => {
     await expect(restoreFromBackup({ db, api, token: 't'.repeat(43) })).rejects.toThrow('No backup');
     expect(calls).toEqual([]);
     expect(await hasLocalData(db)).toBe(false);
+  });
+});
+
+describe('restoreChoices', () => {
+  it('never leaves a new device stuck when the backup cannot come back', () => {
+    expect(restoreChoices('problem')).toEqual(['retry', 'set-up-without']);
+    expect(restoreChoices('newer')).toEqual(['set-up-without']);
+  });
+
+  it('offers reminders once the backup is back, and nothing while it works', () => {
+    expect(restoreChoices('done')).toEqual(['reminders', 'not-now']);
+    expect(restoreChoices('working')).toEqual([]);
+  });
+});
+
+describe('forgetAccountHere', () => {
+  it('signs this device out, so a fresh start can never overwrite the backup', async () => {
+    useApp.getState().setAccount({ email: 'sam@example.com', savedAt: 1, state: 'ok' });
+    const cleared: string[] = [];
+    await forgetAccountHere(async () => void cleared.push('session'));
+    expect(cleared).toEqual(['session']);
+    expect(useApp.getState().account).toBeNull();
   });
 });

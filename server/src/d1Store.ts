@@ -70,7 +70,10 @@ export function d1Store(db: D1Database): Store {
   };
 }
 
-/** Rate-limit counters only matter for their minute; drop old ones. */
-export async function pruneHits(db: D1Database, before: number): Promise<void> {
-  await db.prepare('DELETE FROM hits WHERE window_start < ?').bind(before).run();
+/** Rate-limit counters only matter for their window: an hour at most, or a day for `day:` keys. */
+export async function pruneHits(db: D1Database, now: number): Promise<void> {
+  await db
+    .prepare("DELETE FROM hits WHERE (key LIKE 'day:%' AND window_start < ?) OR (key NOT LIKE 'day:%' AND window_start < ?)")
+    .bind(now - 2 * 24 * 60 * 60 * 1000, now - 2 * 60 * 60 * 1000)
+    .run();
 }

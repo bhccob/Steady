@@ -2,6 +2,8 @@ import { useRouter } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { forgetAccountHere } from '../../src/account/flow';
+import { clearSession } from '../../src/account/session';
 import { WelcomePath } from '../../src/onboarding/WelcomePath';
 import { layout } from '../../src/theme/tokens';
 import { Background } from '../../src/ui/Background';
@@ -12,6 +14,11 @@ import { AppText } from '../../src/ui/Text';
 export default function Welcome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // A sign-in left over from a restore that didn't finish must not follow a fresh start.
+  const startWithout = async () => {
+    await forgetAccountHere(clearSession);
+    router.push('/onboarding/name');
+  };
 
   return (
     <Background>
@@ -32,7 +39,7 @@ export default function Welcome() {
           <AppText variant="caption" tone="secondary" style={styles.center}>
             With an account, Steady keeps a private backup so you can pick up on a new phone.
           </AppText>
-          <Button variant="link" label="Start without an account" onPress={() => router.push('/onboarding/name')} style={styles.start} />
+          <Button variant="link" label="Start without an account" onPress={startWithout} style={styles.start} />
           <AppText variant="caption" tone="secondary" style={styles.center}>
             {Platform.OS === 'web' ? 'No account. No email. Only your reminder times leave this phone.' : 'No account. No email. It all stays on this phone.'}
           </AppText>

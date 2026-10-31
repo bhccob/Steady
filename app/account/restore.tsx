@@ -6,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { createAccountApi } from '../../src/account/api';
 import { ACCOUNT_URL } from '../../src/account/config';
-import { restoreFromBackup } from '../../src/account/flow';
-import { loadSession } from '../../src/account/session';
+import { forgetAccountHere, restoreChoices, restoreFromBackup, type RestoreStep } from '../../src/account/flow';
+import { clearSession, loadSession } from '../../src/account/session';
 import { requestPermissionsAsync } from '../../src/lib/notifications';
 import { syncSoon, turnOnReminders } from '../../src/notify/port';
 import { NewerBackupError } from '../../src/settings/data';
@@ -15,10 +15,9 @@ import { useApp } from '../../src/state/app';
 import { layout } from '../../src/theme/tokens';
 import { Background } from '../../src/ui/Background';
 import { Button } from '../../src/ui/Button';
-import { LoadProblem } from '../../src/ui/LoadProblem';
 import { AppText } from '../../src/ui/Text';
 
-type Step = { kind: 'working' } | { kind: 'done'; name: string } | { kind: 'newer' } | { kind: 'problem'; problem: string };
+type Step = { kind: RestoreStep; name?: string; problem?: string };
 
 async function restore(db: Parameters<typeof restoreFromBackup>[0]['db']): Promise<Step> {
   try {
@@ -33,6 +32,20 @@ async function restore(db: Parameters<typeof restoreFromBackup>[0]['db']): Promi
     return { kind: 'problem', problem: e instanceof Error ? e.message : String(e) };
   }
 }
+
+const TITLE: Record<RestoreStep, string> = {
+  working: 'Welcome back.',
+  done: 'Welcome back.',
+  newer: 'Welcome back.',
+  problem: "Couldn't open your backup.",
+};
+
+const BODY: Record<RestoreStep, string> = {
+  working: 'Getting your pills, marks and settings…',
+  done: 'Your pills, marks and settings are back. Turn on reminders so they keep coming on this device.',
+  newer: 'This backup is from a newer Steady. Update Steady, then sign in again, or set up without it for now.',
+  problem: "Your backup is safe on Steady's server. Try again, or set up without it for now and sign in later from Settings.",
+};
 
 /** Brings the backup onto this device, then asks for reminders, which setup would have asked for. */
 export default function AccountRestore() {
@@ -54,6 +67,12 @@ export default function AccountRestore() {
     restore(db).then(setStep);
   };
 
+  // Signed out here first, so this fresh start can never be offered as a replacement for the backup.
+  const setUpWithout = async () => {
+    await forgetAccountHere(clearSession);
+    router.replace('/onboarding/name');
+  };
+
   const remindersThenHome = async () => {
     try {
       if (Platform.OS === 'web') await turnOnReminders();
@@ -64,27 +83,30 @@ export default function AccountRestore() {
     }
   };
 
-  if (step.kind === 'problem') return <LoadProblem what="your backup" problem={step.problem} onRetry={retry} />;
+  const choices = restoreChoices(step.kind);
 
   return (
     <Background>
       <View style={[styles.column, { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 16 }]}>
         <AppText variant="title" accessibilityRole="header">
-          {step.kind === 'done' && step.name ? `Welcome back, ${step.name}.` : 'Welcome back.'}
+          {step.kind === 'done' && step.name ? `Welcome back, ${step.name}.` : TITLE[step.kind]}
         </AppText>
         <AppText tone="secondary" accessibilityLiveRegion="polite">
-          {step.kind === 'working'
-            ? 'Getting your pills, marks and settings…'
-            : step.kind === 'newer'
-              ? 'This backup is from a newer Steady. Update Steady, then sign in again.'
-              : 'Your pills, marks and settings are back. Turn on reminders so they keep coming on this device.'}
+          {BODY[step.kind]}
         </AppText>
-        {step.kind === 'done' ? (
-          <View style={styles.footer}>
-            <Button label="Turn on reminders" onPress={remindersThenHome} />
-            <Button variant="link" label="Not now" onPress={() => router.replace('/home')} style={styles.center} />
-          </View>
+        {step.kind === 'problem' && step.problem ? (
+          <AppText variant="caption" tone="secondary" selectable>
+            {step.problem}
+          </AppText>
         ) : null}
+        <View style={styles.footer}>
+          {choices.includes('reminders') ? <Button label="Turn on reminders" onPress={remindersThenHome} /> : null}
+          {choices.includes('not-now') ? <Button variant="link" label="Not now" onPress={() => router.replace('/home')} style={styles.center} /> : null}
+          {choices.includes('retry') ? <Button label="Try again" onPress={retry} /> : null}
+          {choices.includes('set-up-without') ? (
+            <Button variant={choices.includes('retry') ? 'link' : 'primary'} label="Set up without my backup" onPress={setUpWithout} style={choices.includes('retry') ? styles.center : undefined} />
+          ) : null}
+        </View>
       </View>
     </Background>
   );
