@@ -45,8 +45,8 @@ const MAX_BODY_CHARS = 1_900_000;
 const DEVICE = /^[A-Za-z0-9_-]{22}$/;
 const CODE = /^\d{6}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-/** Gzip as padded base64 (gzip's first bytes read H4sI). With a length that is a multiple of 4, decoding it can't fail. */
-const PACKED = /^H4sI[A-Za-z0-9+/]*={0,2}$/;
+/** Gzip's first bytes, as base64. */
+const GZIP_BASE64 = 'H4sI';
 
 export const NEW_DEVICE_SUBJECT = 'New sign-in to Steady';
 export const NEW_DEVICE_TEXT = "You signed in to Steady on a new device. If this wasn't you, open Steady on your phone and choose Sign out everywhere in Settings.";
@@ -168,8 +168,16 @@ export async function handleAccount(req: Request, deps: AccountDeps): Promise<Re
     }
     // The phone packs the backup (src/account/pack.ts); the server only seals what it is sent.
     const schemaVersion = body?.schemaVersion, gz = body?.gz;
-    if (typeof schemaVersion !== 'number' || !Number.isInteger(schemaVersion) || schemaVersion < 0 || typeof gz !== 'string' || gz.length % 4 !== 0 || !PACKED.test(gz)) return reply(400);
-    const sealed = await seal(deps.backupKey, account.id, fromBase64(gz));
+    if (typeof schemaVersion !== 'number' || !Number.isInteger(schemaVersion) || schemaVersion < 0 || typeof gz !== 'string' || gz.length % 4 !== 0 || !gz.startsWith(GZIP_BASE64)) return reply(400);
+    let bytes: Uint8Array<ArrayBuffer>;
+    try {
+      // Decoding refuses anything that isn't base64. A pattern check over the whole text first
+      // cost more CPU time than sealing it.
+      bytes = fromBase64(gz);
+    } catch {
+      return reply(400);
+    }
+    const sealed = await seal(deps.backupKey, account.id, bytes);
     await store.putBackup({ accountId: account.id, slot: 0, deviceId: session.deviceId, savedAt: now, schemaVersion, ...sealed });
     return reply(204);
   }
