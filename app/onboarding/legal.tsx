@@ -7,6 +7,7 @@ import { deviceTimeZone } from '../../src/lib/deviceTz';
 import { completeOnboarding } from '../../src/onboarding/complete';
 import { StepLayout } from '../../src/onboarding/StepLayout';
 import { useOnboarding } from '../../src/onboarding/store';
+import { useApp } from '../../src/state/app';
 import { Button } from '../../src/ui/Button';
 import { AppText } from '../../src/ui/Text';
 
@@ -29,6 +30,8 @@ export default function LegalStep() {
     try {
       await completeOnboarding(db, draft, { timezone: deviceTimeZone(), now: new Date().toISOString() });
       reset();
+      // Signed in before setup? Its first backup goes now; without an account this does nothing.
+      useApp.getState().backupNow();
       router.replace('/home');
     } catch {
       setError("That didn't save. Try once more.");
