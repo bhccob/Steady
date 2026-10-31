@@ -12,6 +12,14 @@ export interface JustAdded {
   at: number;
 }
 
+/** Signed in with email: who, when the backup last saved, and whether this device holds it. */
+export interface AccountState {
+  email: string;
+  savedAt: number | null;
+  /** ok: backing up. elsewhere: another device took the backup over. offline: will retry. */
+  state: 'ok' | 'elsewhere' | 'offline';
+}
+
 /** Why the reach-out sheet opened: the button, a rough check-in, or a dose left open (Steady and Close). */
 export type HelpReason = 'button' | 'rough' | 'overdue';
 
@@ -29,6 +37,11 @@ interface AppState {
   /** The "Add a pill" sheet: null when closed, with uid=197609(bhcco) gid=197609 groups=197609 when changing a pill. */
   pillSheet: null | { id?: string };
   justAdded: JustAdded | null;
+  /** Null when not signed in. */
+  account: AccountState | null;
+  setAccount: (a: AccountState | null) => void;
+  /** Backs up now (set by AccountBridge; does nothing until it mounts). */
+  backupNow: () => Promise<void>;
   openPillSheet: (id?: string) => void;
   closePillSheet: () => void;
   setJustAdded: (j: JustAdded | null) => void;
@@ -50,6 +63,9 @@ export const useApp = create<AppState>((set) => ({
   longOverdue: false,
   pillSheet: null,
   justAdded: null,
+  account: null,
+  setAccount: (account) => set({ account }),
+  backupNow: async () => {},
   openPillSheet: (id) => set({ pillSheet: id ? { id } : {} }),
   closePillSheet: () => set({ pillSheet: null }),
   setJustAdded: (justAdded) => set({ justAdded }),
