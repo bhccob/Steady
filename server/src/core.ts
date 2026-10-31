@@ -117,7 +117,8 @@ export async function sha256(text: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function hmac(key: string, text: string): Promise<string> {
+/** Keyed hash, first 16 bytes as hex. */
+export async function hmac(key: string, text: string): Promise<string> {
   const enc = new TextEncoder();
   const k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const mac = new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(text)));
@@ -125,7 +126,7 @@ async function hmac(key: string, text: string): Promise<string> {
 }
 
 /** Compares two hashes in time that doesn't depend on where they differ. */
-function sameHash(a: string, b: string): boolean {
+export function sameHash(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
