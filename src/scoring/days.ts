@@ -60,23 +60,3 @@ export function summarizeDays(doses: readonly ScoringDose[]): Map<LocalDate, Day
   }
   return byDate;
 }
-
-/** Calendar cell: filled, half, hollow (rest), a faint dot (mood only) or nothing. */
-export type Ring = 'full' | 'half' | 'hollow' | 'dot' | 'empty';
-
-function ringFor(s: DaySummary | undefined, hasMood: boolean): Ring {
-  if (!s) return hasMood ? 'dot' : 'empty';
-  if (s.kind === 'rest') return 'hollow';
-  if (s.taken === s.total) return 'full';
-  if (s.taken > 0) return 'half';
-  return 'empty';
-}
-
-export function dayRings(
-  doses: readonly ScoringDose[],
-  moodDates: ReadonlySet<LocalDate>,
-  dates: readonly LocalDate[],
-): Record<LocalDate, Ring> {
-  const days = summarizeDays(doses);
-  return Object.fromEntries(dates.map((date) => [date, ringFor(days.get(date), moodDates.has(date))]));
-}

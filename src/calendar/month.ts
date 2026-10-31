@@ -1,20 +1,8 @@
 import { addDays, weekdayOf, type LocalDate } from '../lib/time';
-import { weekStartOf } from '../rewards/trophies';
-import { dayRings, summarizeDays, type Ring } from '../scoring/days';
+import { summarizeDays, type DaySummary } from '../scoring/days';
 import type { ScoringDose } from '../scoring/types';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-/** A calendar ring, plus "open" for today while its doses are still to come. */
-export type CalendarRing = Ring | 'open';
-
-export interface MonthCell {
-  date: LocalDate;
-  day: number;
-  ring: CalendarRing;
-  isToday: boolean;
-  thisWeek: boolean;
-}
 
 /** "YYYY-MM" for the month a date falls in. */
 export function monthOf(date: LocalDate): string {
@@ -33,52 +21,66 @@ export function monthTitle(month: string, today: LocalDate): string {
   return month.slice(0, 4) === today.slice(0, 4) ? name : `${name} ${month.slice(0, 4)}`;
 }
 
-/** The month's days with their rings. `leading` is how many blank cells come before the 1st (weeks start Monday). */
-export function monthCells(input: {
-  month: string;
-  today: LocalDate;
-  doses: readonly ScoringDose[];
-  moodDates: ReadonlySet<LocalDate>;
-}): { leading: number; cells: MonthCell[] } {
+
+/**
+ * full      everything due was marked (an excused dose counts)
+ * part      some of it was marked
+ * rest      a rest day
+ * unmarked  due, finished, and nothing marked
+ * open      due, nothing marked yet, still in time (today, mostly)
+ * empty     nothing was due
+ * before    before the person started with Steady
+ * ahead     still to come
+ */
+export type Tile = 'full' | 'part' | 'rest' | 'unmarked' | 'open' | 'empty' | 'before' | 'ahead';
+
+export interface MonthCell {
+  date: LocalDate;
+  day: number;
+  isToday: boolean;
+  tile: Tile;
+  /** How far the tile fills, 0 to 1: the share of the day's doses marked. */
+  fill: number;
+  marked: number;
+  due: number;
+}
+
+function cellFor(date: LocalDate, day: number, today: LocalDate, firstDay: LocalDate, s: DaySummary | undefined): MonthCell {
+  const base = { date, day, isToday: date === today };
+  if (date > today) return { ...base, tile: 'ahead', fill: 0, marked: 0, due: 0 };
+  if (date < firstDay && !s) return { ...base, tile: 'before', fill: 0, marked: 0, due: 0 };
+  if (!s) return { ...base, tile: 'empty', fill: 0, marked: 0, due: 0 };
+  const marked = s.taken + s.excused;
+  const due = s.total;
+  const tile: Tile = s.kind === 'rest' ? 'rest' : marked === due ? 'full' : marked > 0 ? 'part' : s.kind === 'open' ? 'open' : 'unmarked';
+  return { ...base, tile, fill: tile === 'rest' ? 0 : marked / due, marked, due };
+}
+
+/** The month's days as tiles. `leading` is how many blank cells come before the 1st (weeks start Monday). */
+export function monthCells(input: { month: string; today: LocalDate; firstDay?: LocalDate; doses: readonly ScoringDose[] }): { leading: number; cells: MonthCell[] } {
   const [y, m] = input.month.split('-').map(Number);
   const length = new Date(Date.UTC(y!, m!, 0)).getUTCDate();
   const first = `${input.month}-01`;
-  const dates = Array.from({ length }, (_, i) => addDays(first, i));
-  const rings = dayRings(input.doses, input.moodDates, dates);
-  const weekStart = weekStartOf(input.today);
-  const weekEnd = addDays(weekStart, 6);
-  const todayOpen = input.doses.some((d) => d.dueLocalDate === input.today && d.status === 'pending');
-
-  const cells = dates.map((date, i): MonthCell => {
-    const isToday = date === input.today;
-    const ring = rings[date]!;
-    return {
-      date,
-      day: i + 1,
-      ring: isToday && ring === 'empty' && todayOpen ? 'open' : ring,
-      isToday,
-      thisWeek: date >= weekStart && date <= weekEnd,
-    };
+  const days = summarizeDays(input.doses);
+  const cells = Array.from({ length }, (_, i) => {
+    const date = addDays(first, i);
+    return cellFor(date, i + 1, input.today, input.firstDay ?? first, days.get(date));
   });
   return { leading: (weekdayOf(first) + 6) % 7, cells };
 }
 
-export interface DensityCell {
-  date: LocalDate;
-  /** 0 nothing marked, 1 some, 2 most, 3 all. Null when nothing was due or the day is still open. */
-  level: 0 | 1 | 2 | 3 | null;
-  rest: boolean;
+/** Finished days of the month by how they went. A day still in progress waits until all of it is marked. */
+export function monthTally(cells: readonly MonthCell[]): { full: number; part: number; rest: number; unmarked: number } {
+  const tally = { full: 0, part: 0, rest: 0, unmarked: 0 };
+  for (const c of cells) {
+    if (c.tile === 'full' || c.tile === 'rest' || c.tile === 'unmarked') tally[c.tile]++;
+    else if (c.tile === 'part' && !c.isToday) tally.part++;
+  }
+  return tally;
 }
 
-/** The last `span` days, oldest first, for the 14/30/90-day view. */
-export function densityCells(input: { doses: readonly ScoringDose[]; today: LocalDate; span: number }): DensityCell[] {
-  const days = summarizeDays(input.doses);
-  return Array.from({ length: input.span }, (_, i): DensityCell => {
-    const date = addDays(input.today, i - input.span + 1);
-    const s = days.get(date);
-    if (!s || s.kind === 'open') return { date, level: null, rest: false };
-    if (s.kind === 'rest') return { date, level: 0, rest: true };
-    const share = (s.taken + s.excused) / s.total;
-    return { date, level: share >= 1 ? 3 : share >= 0.5 ? 2 : share > 0 ? 1 : 0, rest: false };
-  });
+/** "21 full days · 5 partly · 2 rest", leaving out what didn't happen; null before anything is marked. */
+export function tallyWords(t: ReturnType<typeof monthTally>): string | null {
+  const parts = [t.full ? `${t.full} full ${t.full === 1 ? 'day' : 'days'}` : '', t.part ? `${t.part} partly` : '', t.rest ? `${t.rest} rest` : ''].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
 }

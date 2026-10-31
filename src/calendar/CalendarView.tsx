@@ -3,60 +3,86 @@ import { PanResponder, Pressable, StyleSheet, View, type ViewStyle } from 'react
 
 import type { DayState, PathEntry } from '../home/path';
 import { shortDate, weekdayOf } from '../lib/time';
-import { steadyScore } from '../scoring/score';
-import { totalDaysMarked } from '../scoring/streak';
+import { DECOR_FONT_SCALE, HAIRLINE } from '../theme/tokens';
 import type { Theme } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Icon } from '../ui/Icon';
-import { Segmented } from '../ui/Segmented';
 import { AppText } from '../ui/Text';
-import { densityCells, monthCells, monthOf, monthTitle, shiftMonth, type CalendarRing, type MonthCell } from './month';
+import { monthCells, monthOf, monthTally, monthTitle, shiftMonth, tallyWords, type MonthCell, type Tile } from './month';
 import type { HistoryData } from './useHistory';
 
-type Span = 'month' | '14' | '30' | '90';
-const SPANS: { value: Span; label: string }[] = [
-  { value: 'month', label: 'Month' },
-  { value: '14', label: '14 days' },
-  { value: '30', label: '30 days' },
-  { value: '90', label: '90 days' },
-];
 const WEEK_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const RING_WORDS: Record<CalendarRing, string> = {
-  full: 'all marked',
-  half: 'some marked',
-  hollow: 'rest day',
-  dot: 'mood only',
-  open: 'still to come',
-  empty: '',
-};
+/** A day with nothing marked looks like a day with nothing due: never a failure mark. */
+const QUIET = 'rgba(128, 120, 110, 0.09)';
 
-function ringStyle(ring: CalendarRing, t: Theme): ViewStyle {
-  switch (ring) {
+function tileWords(c: MonthCell): string {
+  switch (c.tile) {
     case 'full':
-      return { backgroundColor: t.accent, borderWidth: 1.5, borderColor: t.accentLine };
-    case 'half':
-      return { borderWidth: 1.5, borderColor: t.accentLine, backgroundImage: `linear-gradient(90deg, ${t.accent} 50%, transparent 50%)` };
-    case 'hollow':
-      return { borderWidth: 2.5, borderColor: t.text.secondary };
-    case 'dot':
-      return { width: 6, height: 6, margin: 5, backgroundColor: t.text.secondary };
-    case 'open':
-      return { borderWidth: 2, borderColor: t.accentLine, borderStyle: 'dashed' };
+      return 'all marked';
+    case 'part':
+      return `${c.marked} of ${c.due} marked`;
+    case 'rest':
+      return 'rest day';
+    case 'unmarked':
+      return 'nothing marked';
+    case 'empty':
+      return 'nothing due';
+    case 'before':
+      return 'before you started';
     default:
-      return {};
+      return 'still to come';
   }
 }
 
-function Ring({ ring, size = 16 }: { ring: CalendarRing; size?: number }) {
-  const theme = useTheme();
-  return <View style={[{ width: size, height: size, borderRadius: 999 }, ringStyle(ring, theme)]} />;
+function tileStyle(tile: Tile, t: Theme): ViewStyle {
+  switch (tile) {
+    case 'full':
+      return { backgroundColor: t.accent, borderBottomWidth: 3, borderBottomColor: t.accentDeep };
+    case 'part':
+      return { backgroundColor: t.glass.solid, borderWidth: 1.5, borderColor: t.accentDeep };
+    case 'rest':
+      return { borderWidth: 2, borderStyle: 'dashed', borderColor: t.text.secondary };
+    case 'ahead':
+    case 'before':
+      return {};
+    default:
+      return { backgroundColor: QUIET };
+  }
 }
 
-function entryFor(c: MonthCell, today: string): PathEntry {
+function entryFor(c: MonthCell): PathEntry {
   const state: DayState =
-    c.date > today ? 'ahead' : c.ring === 'hollow' ? 'rest' : c.ring === 'full' || c.ring === 'half' ? 'done' : c.isToday ? 'today' : 'past';
+    c.tile === 'ahead' ? 'ahead' : c.tile === 'rest' ? 'rest' : c.tile === 'full' || c.tile === 'part' ? 'done' : c.isToday ? 'today' : 'past';
   return { kind: 'day', date: c.date, weekday: WEEKDAY[weekdayOf(c.date)]!, day: c.day, state, isToday: c.isToday };
+}
+
+function DayTile({ c, onPress }: { c: MonthCell; onPress: () => void }) {
+  const theme = useTheme();
+  const onAccent = c.tile === 'full';
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={[shortDate(c.date), c.isToday ? 'today' : '', tileWords(c)].filter(Boolean).join(', ')}
+      accessibilityHint="Shows that day"
+      onPress={onPress}
+      style={({ pressed }) => [styles.tile, tileStyle(c.tile, theme), c.isToday && { borderWidth: 2.5, borderColor: theme.text.primary }, pressed && styles.pressed]}
+    >
+      {c.tile === 'part' ? <View style={[styles.fill, { height: `${Math.round(c.fill * 100)}%`, backgroundColor: theme.accent }]} /> : null}
+      <AppText
+        maxFontSizeMultiplier={DECOR_FONT_SCALE}
+        tone={onAccent || c.tile === 'part' ? 'primary' : 'secondary'}
+        style={[styles.num, onAccent && { color: theme.onAccent }, (c.tile === 'ahead' || c.tile === 'before') && styles.faint]}
+      >
+        {c.day}
+      </AppText>
+      {onAccent ? (
+        <View style={styles.check}>
+          <Icon name="check" size={12} color={theme.onAccent} />
+        </View>
+      ) : null}
+    </Pressable>
+  );
 }
 
 interface CalendarViewProps {
@@ -64,11 +90,10 @@ interface CalendarViewProps {
   onOpenDay: (entry: PathEntry) => void;
 }
 
-/** Month rings with a day sheet on tap, or a 14/30/90-day density view. */
+/** The month as tiles you can read at a glance: full days full, partly marked days filled part way. */
 export function CalendarView({ data, onOpenDay }: CalendarViewProps) {
   const theme = useTheme();
   const [month, setMonth] = useState(monthOf(data.today));
-  const [span, setSpan] = useState<Span>('month');
   const first = monthOf(data.firstDay);
   const last = monthOf(data.today);
   const canBack = month > first;
@@ -91,152 +116,117 @@ export function CalendarView({ data, onOpenDay }: CalendarViewProps) {
     }),
   );
 
-  const moodDates = new Set(data.checkins.map((c) => c.dateLocal));
-  const { leading, cells } = monthCells({ month, today: data.today, doses: data.doses, moodDates });
+  const { leading, cells } = monthCells({ month, today: data.today, firstDay: data.firstDay, doses: data.doses });
   const slots: (MonthCell | null)[] = [...Array<null>(leading).fill(null), ...cells];
   while (slots.length % 7) slots.push(null);
   const weeks = Array.from({ length: slots.length / 7 }, (_, i) => slots.slice(i * 7, i * 7 + 7));
 
-  const title = span === 'month' ? monthTitle(month, data.today) : `Last ${span} days`;
+  const tally = monthTally(cells);
+  const words = tallyWords(tally);
+  const counted = tally.full + tally.part + tally.rest + tally.unmarked;
+  const segments = [
+    { n: tally.full, color: theme.accentDeep },
+    { n: tally.part, color: theme.accent },
+    { n: tally.rest, color: theme.chart.none },
+  ];
 
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
         <AppText variant="title" accessibilityRole="header">
-          {title}
+          {monthTitle(month, data.today)}
         </AppText>
-        {span === 'month' ? (
-          <View style={styles.arrows}>
-            {[
-              { icon: 'chevron-left' as const, enabled: canBack, label: monthTitle(shiftMonth(month, -1), data.today), go: -1 },
-              { icon: 'chevron-right' as const, enabled: canNext, label: monthTitle(shiftMonth(month, 1), data.today), go: 1 },
-            ].map((a) => (
-              <Pressable
-                key={a.icon}
-                accessibilityRole="button"
-                accessibilityLabel={a.label}
-                accessibilityState={{ disabled: !a.enabled }}
-                disabled={!a.enabled}
-                onPress={() => setMonth(shiftMonth(month, a.go))}
-                style={[styles.arrow, { backgroundColor: theme.glass.overlay, borderColor: theme.glass.border, opacity: a.enabled ? 1 : 0.35 }]}
-              >
-                <Icon name={a.icon} size={18} />
-              </Pressable>
-            ))}
+        <View style={styles.arrows}>
+          {[
+            { icon: 'chevron-left' as const, enabled: canBack, label: monthTitle(shiftMonth(month, -1), data.today), go: -1 },
+            { icon: 'chevron-right' as const, enabled: canNext, label: monthTitle(shiftMonth(month, 1), data.today), go: 1 },
+          ].map((a) => (
+            <Pressable
+              key={a.icon}
+              accessibilityRole="button"
+              accessibilityLabel={a.label}
+              accessibilityState={{ disabled: !a.enabled }}
+              disabled={!a.enabled}
+              onPress={() => setMonth(shiftMonth(month, a.go))}
+              style={[styles.arrow, { backgroundColor: theme.glass.overlay, borderColor: theme.glass.border, opacity: a.enabled ? 1 : 0.35 }]}
+            >
+              <Icon name={a.icon} size={18} />
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.summary} accessible accessibilityLabel={words ?? 'Nothing marked yet this month.'}>
+        <AppText variant="bodyStrong">{words ?? 'Nothing marked yet this month.'}</AppText>
+        {counted ? (
+          <View style={[styles.bar, { backgroundColor: HAIRLINE }]}>
+            {segments.map((s, i) => (s.n ? <View key={i} style={{ flex: s.n, backgroundColor: s.color }} /> : null))}
+            {tally.unmarked ? <View style={{ flex: tally.unmarked }} /> : null}
           </View>
         ) : null}
       </View>
-      <AppText variant="caption" tone="secondary">
-        Steady {steadyScore(data.doses, data.today)} · {totalDaysMarked(data.doses)} days marked
-      </AppText>
 
-      <Segmented label="Calendar range" options={SPANS} value={span} onChange={setSpan} />
-
-      {span === 'month' ? (
-        <View {...pan.panHandlers}>
-          <View style={styles.row}>
-            {WEEK_LETTERS.map((l, i) => (
-              <AppText key={i} variant="label" tone="secondary" style={styles.letter} importantForAccessibility="no">
-                {l}
-              </AppText>
-            ))}
-          </View>
-          {weeks.map((week, w) => (
-            <View key={w} style={[styles.row, week.some((c) => c?.thisWeek) && { backgroundColor: theme.glass.overlay, borderRadius: 14 }]}>
-              {week.map((c, i) =>
-                c ? (
-                  <Pressable
-                    key={c.date}
-                    accessibilityRole="button"
-                    accessibilityLabel={[shortDate(c.date), c.isToday ? 'today' : '', RING_WORDS[c.ring]].filter(Boolean).join(', ')}
-                    accessibilityHint="Shows that day"
-                    onPress={() => onOpenDay(entryFor(c, data.today))}
-                    style={styles.cell}
-                  >
-                    <View style={[styles.num, c.isToday && { backgroundColor: theme.text.primary }]}>
-                      <AppText style={[styles.numText, c.isToday && { color: theme.background[0], fontWeight: '600' }]}>{c.day}</AppText>
-                    </View>
-                    <Ring ring={c.ring} />
-                  </Pressable>
-                ) : (
-                  <View key={`blank-${i}`} style={styles.cell} />
-                ),
-              )}
-            </View>
-          ))}
-          <View style={styles.legend}>
-            {(['full', 'half', 'hollow', 'dot'] as const).map((r) => (
-              <View key={r} style={styles.legendItem}>
-                <Ring ring={r} size={10} />
-                <AppText variant="caption" tone="secondary">
-                  {r === 'full' ? 'all' : r === 'half' ? 'some' : RING_WORDS[r]}
-                </AppText>
-              </View>
-            ))}
-            <AppText variant="caption" tone="secondary" style={styles.legendEnd}>
-              shaded row = this week
+      <View {...pan.panHandlers} style={styles.grid}>
+        <View style={styles.row}>
+          {WEEK_LETTERS.map((l, i) => (
+            <AppText key={i} variant="label" tone="secondary" style={styles.letter} importantForAccessibility="no">
+              {l}
             </AppText>
+          ))}
+        </View>
+        {weeks.map((week, w) => (
+          <View key={w} style={styles.row}>
+            {week.map((c, i) => (c ? <DayTile key={c.date} c={c} onPress={() => onOpenDay(entryFor(c))} /> : <View key={`blank-${i}`} style={styles.blank} />))}
           </View>
-        </View>
-      ) : (
-        <Density data={data} span={Number(span)} />
-      )}
-    </View>
-  );
-}
+        ))}
+      </View>
 
-function Density({ data, span }: { data: HistoryData; span: number }) {
-  const theme = useTheme();
-  const cells = densityCells({ doses: data.doses, today: data.today, span });
-  const fills = ['rgba(127, 120, 110, 0.12)', `${theme.accent}80`, theme.accent, theme.accentDeep];
-  const full = cells.filter((c) => c.level === 3).length;
-  const some = cells.filter((c) => c.level === 1 || c.level === 2).length;
-  const rest = cells.filter((c) => c.rest).length;
-  const rows = Array.from({ length: Math.ceil(cells.length / 10) }, (_, i) => cells.slice(i * 10, i * 10 + 10));
-
-  return (
-    <View style={styles.density} accessible accessibilityLabel={`Last ${span} days: ${full} fully marked, ${some} partly marked, ${rest} rest days.`}>
-      {rows.map((row, r) => (
-        <View key={r} style={styles.densityRow}>
-          {Array.from({ length: 10 }, (_, i) => {
-            const c = row[i];
-            if (!c) return <View key={i} style={styles.square} />;
-            return (
-              <View
-                key={c.date}
-                style={[
-                  styles.square,
-                  c.level === null
-                    ? { borderWidth: 1, borderColor: 'rgba(127, 120, 110, 0.18)' }
-                    : { backgroundColor: fills[c.level], ...(c.rest ? { borderWidth: 2, borderColor: theme.text.secondary } : null) },
-                  c.date === data.today && { borderWidth: 2, borderColor: theme.accentLine },
-                ]}
-              />
-            );
-          })}
+      <View style={styles.legend} importantForAccessibility="no-hide-descendants">
+        <View style={styles.legendItem}>
+          <View style={[styles.swatch, tileStyle('full', theme), styles.swatchFlat]} />
+          <AppText variant="caption" tone="secondary">
+            all marked
+          </AppText>
         </View>
-      ))}
-      <AppText variant="caption" tone="secondary">
-        Deeper beige means more of that day was marked. Outlined squares are rest days.
-      </AppText>
+        <View style={styles.legendItem}>
+          <View style={[styles.swatch, tileStyle('part', theme)]}>
+            <View style={[styles.fill, { height: '50%', backgroundColor: theme.accent }]} />
+          </View>
+          <AppText variant="caption" tone="secondary">
+            some
+          </AppText>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.swatch, tileStyle('rest', theme), styles.swatchThin]} />
+          <AppText variant="caption" tone="secondary">
+            rest
+          </AppText>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 12 },
+  wrap: { gap: 14 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   arrows: { flexDirection: 'row', gap: 6 },
   arrow: { width: 44, height: 44, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  row: { flexDirection: 'row' },
-  letter: { flex: 1, textAlign: 'center', paddingBottom: 4 },
-  cell: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  num: { minWidth: 26, minHeight: 26, paddingHorizontal: 3, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  numText: { fontSize: 14, lineHeight: 18 },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 10 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendEnd: { marginLeft: 'auto' },
-  density: { gap: 6 },
-  densityRow: { flexDirection: 'row', gap: 6 },
-  square: { flex: 1, aspectRatio: 1, borderRadius: 7 },
+  summary: { gap: 8 },
+  bar: { flexDirection: 'row', height: 10, borderRadius: 999, overflow: 'hidden' },
+  grid: { gap: 6 },
+  row: { flexDirection: 'row', gap: 6 },
+  letter: { flex: 1, textAlign: 'center' },
+  blank: { flex: 1, aspectRatio: 1 },
+  tile: { flex: 1, aspectRatio: 1, borderRadius: 12, overflow: 'hidden', padding: 5 },
+  fill: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  num: { fontSize: 13, lineHeight: 16, fontWeight: '600' },
+  faint: { opacity: 0.45 },
+  check: { position: 'absolute', right: 5, bottom: 4 },
+  pressed: { opacity: 0.7 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  swatch: { width: 14, height: 14, borderRadius: 4, overflow: 'hidden' },
+  swatchFlat: { borderBottomWidth: 0 },
+  swatchThin: { borderWidth: 1.5 },
 });

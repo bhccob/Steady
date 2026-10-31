@@ -1,5 +1,4 @@
 import { day, days } from '../../test-utils/doses';
-import { dayRings } from '../days';
 import { steadyStreak, totalDaysMarked } from '../streak';
 
 describe('steadyStreak', () => {
@@ -82,30 +81,5 @@ describe('totalDaysMarked', () => {
       ...day('2026-10-04', 'pending'),
     ];
     expect(totalDaysMarked(doses)).toBe(2);
-  });
-});
-
-describe('dayRings', () => {
-  it('maps each day to the calendar ring it shows', () => {
-    const doses = [
-      ...day('2026-10-01', 'taken_ontime', 'taken_late'),
-      ...day('2026-10-02', 'taken_ontime', 'excused'),
-      ...day('2026-10-03', 'missed'),
-      ...day('2026-10-06', 'taken_ontime', 'pending'),
-      ...day('2026-10-07', 'missed'),
-    ];
-    const moods = new Set(['2026-10-04']);
-    const dates = ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07'];
-
-    expect(dayRings(doses, moods, dates)).toEqual({
-      '2026-10-01': 'full',
-      '2026-10-02': 'half',
-      '2026-10-03': 'hollow',
-      '2026-10-04': 'dot',
-      '2026-10-05': 'empty',
-      '2026-10-06': 'half',
-      // Missed with no rest day left: shown as empty, never as a failure mark.
-      '2026-10-07': 'empty',
-    });
   });
 });
