@@ -25,10 +25,15 @@ export interface Profile {
   crisisRegion: string | null;
   /** Blur the app in the app switcher (iOS) or mark the window secure (Android, which also blocks screenshots). */
   hideInSwitcher: boolean;
+  /** Setup steps the user answered, even with nothing picked (see src/home/setup.ts). */
+  setupAnswered: string[];
+  /** When the user hid Home's Get set up list; null while it shows. */
+  setupHiddenAt: string | null;
   createdAt: string;
 }
 
-export type ProfilePatch = Partial<Omit<Profile, 'createdAt'>>;
+/** `setupAnswered` only grows, through noteSetupAnswered. */
+export type ProfilePatch = Partial<Omit<Profile, 'createdAt' | 'setupAnswered'>>;
 
 interface ProfileRow {
   display_name: string;
@@ -47,6 +52,8 @@ interface ProfileRow {
   support_level_chosen: number;
   crisis_region: string | null;
   hide_in_switcher: number;
+  setup_answered_json: string;
+  setup_hidden_at: string | null;
   created_at: string;
 }
 
@@ -67,7 +74,18 @@ const COLUMNS: Record<keyof ProfilePatch, string> = {
   supportLevelChosen: 'support_level_chosen',
   crisisRegion: 'crisis_region',
   hideInSwitcher: 'hide_in_switcher',
+  setupHiddenAt: 'setup_hidden_at',
 };
+
+/** The stored list of answered steps; a backup can carry anything, so junk reads as none. */
+function answeredFrom(json: string): string[] {
+  try {
+    const list: unknown = JSON.parse(json);
+    return Array.isArray(list) ? list.filter((s): s is string => typeof s === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 function fromRow(r: ProfileRow): Profile {
   return {
@@ -87,6 +105,8 @@ function fromRow(r: ProfileRow): Profile {
     supportLevelChosen: r.support_level_chosen === 1,
     crisisRegion: r.crisis_region,
     hideInSwitcher: r.hide_in_switcher === 1,
+    setupAnswered: answeredFrom(r.setup_answered_json),
+    setupHiddenAt: r.setup_hidden_at,
     createdAt: r.created_at,
   };
 }
@@ -111,4 +131,11 @@ export async function updateProfile(db: Db, patch: ProfilePatch): Promise<void> 
   const { sql, values } = setClause(patch, COLUMNS);
   if (!sql) return;
   await db.runAsync(`UPDATE profile SET ${sql} WHERE id = 1`, values);
+}
+
+/** Notes a setup step as answered; once is enough. */
+export async function noteSetupAnswered(db: Db, step: string): Promise<void> {
+  const profile = await getProfile(db);
+  if (!profile || profile.setupAnswered.includes(step)) return;
+  await db.runAsync('UPDATE profile SET setup_answered_json = ? WHERE id = 1', [JSON.stringify([...profile.setupAnswered, step])]);
 }

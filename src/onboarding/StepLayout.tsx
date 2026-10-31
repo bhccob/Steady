@@ -10,7 +10,7 @@ import { Icon } from '../ui/Icon';
 import { AppText } from '../ui/Text';
 
 /** Steps after the welcome screen. */
-export const TOTAL_STEPS = 11;
+export const TOTAL_STEPS = 2;
 
 interface StepLayoutProps {
   /** Onboarding step for the progress line. Settings pages leave it out and show no progress. */

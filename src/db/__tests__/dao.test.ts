@@ -7,7 +7,7 @@ import { listHarderTimes, replaceHarderTimes } from '../dao/harderTimes';
 import { collectTrophy, listTrophies } from '../dao/trophies';
 import { insertGuardian, listGuardians, markGuardianAgreed, revokeGuardian } from '../dao/guardians';
 import { deleteMed, insertMed, listMeds } from '../dao/meds';
-import { createProfile, getProfile, updateProfile } from '../dao/profile';
+import { createProfile, getProfile, noteSetupAnswered, updateProfile } from '../dao/profile';
 import { insertSchedule, listSchedules } from '../dao/schedules';
 import { listConditions, replaceConditions } from '../dao/support';
 import { migrate } from '../migrations';
@@ -106,6 +106,24 @@ describe('profile', () => {
     expect(p?.supportLevelChosen).toBe(true);
     expect(p?.biometricLock).toBe(true);
     expect(p?.displayName).toBe('sam');
+  });
+
+  it('remembers each setup step answered once, and when the setup list was hidden', async () => {
+    const db = await freshDb();
+    await createProfile(db, { displayName: '', timezone: 'UTC' });
+    expect(await getProfile(db)).toMatchObject({ setupAnswered: [], setupHiddenAt: null });
+    await noteSetupAnswered(db, 'sleep');
+    await noteSetupAnswered(db, 'support');
+    await noteSetupAnswered(db, 'sleep');
+    await updateProfile(db, { setupHiddenAt: '2026-10-31T10:00:00.000Z' });
+    expect(await getProfile(db)).toMatchObject({ setupAnswered: ['sleep', 'support'], setupHiddenAt: '2026-10-31T10:00:00.000Z' });
+  });
+
+  it('reads a damaged list of setup answers as empty', async () => {
+    const db = await freshDb();
+    await createProfile(db, { displayName: '', timezone: 'UTC' });
+    db.raw.exec("UPDATE profile SET setup_answered_json = 'not json'");
+    expect((await getProfile(db))?.setupAnswered).toEqual([]);
   });
 });
 

@@ -11,6 +11,9 @@ import { buildPath, indexOfToday, type PathEntry } from '../../src/home/path';
 import { BedtimeCard } from '../../src/home/BedtimeCard';
 import { ComebackGlow } from '../../src/home/ComebackGlow';
 import { RecapCard } from '../../src/home/RecapCard';
+import type { SetupStep } from '../../src/home/setup';
+import { SetupList } from '../../src/home/SetupList';
+import { useSetup } from '../../src/home/useSetup';
 import { SteadyHandCard } from '../../src/home/SteadyHandCard';
 import { messageUrl, openUrl } from '../../src/lib/contact';
 import { PillCard, type NextDose } from '../../src/home/PillCard';
@@ -56,6 +59,14 @@ export default function HomeScreen() {
   const openHelp = useApp((s) => s.openHelp);
   const openPillSheet = useApp((s) => s.openPillSheet);
   const router = useRouter();
+  const setup = useSetup();
+  const openStep = (step: SetupStep) => {
+    if (step === 'pill') openPillSheet();
+    else if (step === 'reminders') setup.turnOn();
+    else if (step === 'support') router.push('/edit/support');
+    else if (step === 'sleep') router.push({ pathname: '/edit/sleep', params: { suggest: '1' } });
+    else router.push({ pathname: '/guardians', params: { add: '1' } });
+  };
   const [sheet, setSheet] = useState<{ entry: PathEntry; justCollected: boolean } | null>(null);
   const [moodHandled, setMoodHandled] = useState(false);
   const [eveningHandled, setEveningHandled] = useState(false);
@@ -154,6 +165,8 @@ export default function HomeScreen() {
             </AppText>
           </View>
 
+          {setup.rows ? <SetupList rows={setup.rows} remindNote={setup.remindNote} onOpen={openStep} onHide={setup.hide} /> : null}
+
           <View style={styles.hero}>
             <StreakPath entries={entries} focus={focus} onTap={onTap} onDragChange={(d) => setScrollEnabled(!d)} />
             <ComebackGlow play={comebacks} />
@@ -208,7 +221,10 @@ export default function HomeScreen() {
 
           {data.bedtime ? <BedtimeCard kind={data.bedtime} onGoodnight={goodnight} onMoreTime={moreTime} /> : null}
 
-          <PillCard next={next} nowMs={nowMs} hasMeds={hasPills(data.meds)} note={note} onMark={onMark} onAdd={() => openPillSheet()} />
+          {/* With no pills yet, the setup list's first step already offers to add one. */}
+          {hasPills(data.meds) || !setup.rows ? (
+            <PillCard next={next} nowMs={nowMs} hasMeds={hasPills(data.meds)} note={note} onMark={onMark} onAdd={() => openPillSheet()} />
+          ) : null}
 
           <AddedCard />
 

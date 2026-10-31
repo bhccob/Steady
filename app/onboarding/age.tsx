@@ -13,7 +13,7 @@ export default function AgeStep() {
 
   return (
     <StepLayout
-      step={2}
+      step={1}
       title="Are you 18 or older?"
       subtitle="Steady is made for adults. This step can't be skipped."
       footer={
@@ -23,7 +23,7 @@ export default function AgeStep() {
               label="Yes, I'm 18 or older"
               onPress={() => {
                 patch({ ageConfirmed: true });
-                router.push('/onboarding/meds');
+                router.push('/onboarding/legal');
               }}
             />
             <Button variant="secondary" label="I'm under 18" onPress={() => setUnder18(true)} />

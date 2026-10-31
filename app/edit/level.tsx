@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 
-import { getProfile, updateProfile } from '../../src/db/dao/profile';
+import { getProfile, noteSetupAnswered, updateProfile } from '../../src/db/dao/profile';
 import { listConditions } from '../../src/db/dao/support';
 import type { SupportLevel } from '../../src/db/schema';
 import { syncSoon } from '../../src/notify/port';
@@ -32,6 +32,7 @@ export default function LevelEditor() {
   const save = async () => {
     if (!level) return;
     await updateProfile(db, { supportLevel: level, supportLevelChosen: level !== suggested });
+    await noteSetupAnswered(db, 'support');
     syncSoon(db);
     useApp.getState().bumpData();
     router.back();

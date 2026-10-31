@@ -42,7 +42,7 @@ export default function LegalStep() {
   };
 
   return (
-    <StepLayout step={11} title="Before we start" footer={<Button label={saving ? 'Saving…' : 'I understand'} onPress={finish} />}>
+    <StepLayout step={2} title="Before we start" footer={<Button label={saving ? 'Saving…' : 'I understand'} onPress={finish} />}>
       <AppText>{"Steady helps you keep track. It isn't medical advice, and it doesn't replace care from your doctor or pharmacist."}</AppText>
       <AppText>Change or stop a medication only with them.</AppText>
       <AppText>If things feel like too much, a free crisis line is always two taps from Home.</AppText>

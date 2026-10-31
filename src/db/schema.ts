@@ -192,3 +192,9 @@ CREATE TABLE harder_times (
   created_at TEXT NOT NULL
 );
 `;
+
+/** The Get set up list on Home: steps answered even with "none" (support, sleep), and when it was hidden. */
+export const SCHEMA_V8 = `
+ALTER TABLE profile ADD COLUMN setup_answered_json TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE profile ADD COLUMN setup_hidden_at TEXT;
+`;

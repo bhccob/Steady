@@ -53,6 +53,21 @@ export function newDraftMed(): DraftMed {
 
 export const DEFAULT_SLEEP: DraftSleep = { bedtimeMin: 23 * 60, wakeMin: 7 * 60, windDown: true, stillUp: null };
 
+/**
+ * What the sleep editor starts with: the saved times, or with none saved, bedtime reminders off
+ * from Settings and 23:00 to 07:00 suggested (on) from Home's setup list.
+ */
+export function sleepToEdit(
+  saved: { bedtimeMin: number | null; wakeMin: number | null; windDown: boolean; stillUp: StillUp | null },
+  suggest: boolean,
+): DraftSleep | null {
+  if (saved.bedtimeMin !== null && saved.wakeMin !== null) {
+    return { bedtimeMin: saved.bedtimeMin, wakeMin: saved.wakeMin, windDown: saved.windDown, stillUp: saved.stillUp };
+  }
+  return suggest ? { ...DEFAULT_SLEEP } : null;
+}
+
+/** Setup asks only 18+ and the safety note; pills, sleep and the rest come from Home's Get set up list. */
 export function emptyDraft(): OnboardingDraft {
-  return { name: '', ageConfirmed: false, meds: [newDraftMed()], conditions: [], chosenLevel: null, sleep: { ...DEFAULT_SLEEP }, guardian: null };
+  return { name: '', ageConfirmed: false, meds: [], conditions: [], chosenLevel: null, sleep: null, guardian: null };
 }

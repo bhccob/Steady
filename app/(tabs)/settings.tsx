@@ -19,6 +19,7 @@ import { loadData } from '../../src/lib/loadData';
 import { formatHm } from '../../src/lib/time';
 import { cancelAllScheduledNotificationsAsync, dismissAllNotificationsAsync } from '../../src/lib/notifications';
 import { forgetReminders, remindersOn, syncSoon, turnOnReminders } from '../../src/notify/port';
+import { turnOnProblem } from '../../src/notify/turnOnProblem';
 import { useOnboarding } from '../../src/onboarding/store';
 import { deleteEverything } from '../../src/settings/data';
 import { removeExportFiles, shareExport } from '../../src/settings/exportFile';
@@ -198,13 +199,7 @@ export default function SettingsScreen() {
       setWebReminders(true);
       syncSoon(db);
     } else {
-      setRemindNote(
-        result === 'denied'
-          ? 'Notifications are blocked for Steady in your browser settings.'
-          : result === 'not-installed'
-            ? 'Add Steady to your Home Screen first, then turn reminders on there.'
-            : "This browser can't show Steady's reminders.",
-      );
+      setRemindNote(turnOnProblem(result, true));
     }
   };
 

@@ -17,7 +17,7 @@ export default function Welcome() {
   // A sign-in left over from a restore that didn't finish must not follow a fresh start.
   const startWithout = async () => {
     await forgetAccountHere(clearSession);
-    router.push('/onboarding/name');
+    router.push('/onboarding/age');
   };
 
   return (

@@ -46,7 +46,7 @@ export default function AccountCode() {
       await saveSession({ token: result.token, email: signedInAs, savedAt: result.savedAt });
       useApp.getState().setAccount({ email: signedInAs, savedAt: result.savedAt, state: 'ok' });
       const next = afterSignIn(result, await hasLocalData(db));
-      if (next === 'setup') router.replace('/onboarding/name');
+      if (next === 'setup') router.replace('/onboarding/age');
       else if (next === 'restore') router.replace('/account/restore');
       else if (next === 'choose') router.replace('/account/choose');
       else {

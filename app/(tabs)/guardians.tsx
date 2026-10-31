@@ -1,6 +1,6 @@
 import { presentContactPickerAsync } from 'expo-contacts/legacy';
 import { getLocales } from 'expo-localization';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 import { Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
@@ -44,6 +44,7 @@ export default function GuardiansScreen() {
   const insets = useSafeAreaInsets();
   const tabBarSpace = useTabBarSpace();
   const db = useSQLiteContext();
+  const router = useRouter();
   const theme = useTheme();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [guardians, setGuardians] = useState<Guardian[]>([]);
@@ -71,6 +72,14 @@ export default function GuardiansScreen() {
       load();
     }, [load]),
   );
+
+  // Home's "Someone close" step arrives with ?add=1, which opens the add sheet straight away.
+  const { add: openAdd } = useLocalSearchParams<{ add?: string }>();
+  const sheetOpen = adding || openAdd === '1';
+  const closeAdd = () => {
+    setAdding(false);
+    if (openAdd) router.setParams({ add: undefined });
+  };
 
   if (!profile) return problem ? <LoadProblem what="Guardians" problem={problem} onRetry={load} /> : <Background />;
 
@@ -105,7 +114,7 @@ export default function GuardiansScreen() {
     }
     const g = { displayName: draft.name.trim(), channel: draft.channel, contact: draft.contact.trim() || null, relationship: draft.relationship };
     await insertGuardian(db, g);
-    setAdding(false);
+    closeAdd();
     await load();
     if (g.channel !== 'inapp') await sendInvite(g);
   };
@@ -224,7 +233,7 @@ export default function GuardiansScreen() {
         </View>
       </ScrollView>
 
-      <BottomSheet visible={adding} onClose={() => setAdding(false)} title="Add someone" subtitle="They'll be asked first. Either of you can stop any time.">
+      <BottomSheet visible={sheetOpen} onClose={closeAdd} title="Add someone" subtitle="They'll be asked first. Either of you can stop any time.">
         <View style={styles.sheetBody}>
           {/* Browsers on iPhone can't open the contacts list; typing it in works everywhere. */}
           {Platform.OS === 'web' ? null : (

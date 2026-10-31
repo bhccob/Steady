@@ -1,18 +1,19 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 
-import { getProfile, updateProfile, type Profile } from '../../src/db/dao/profile';
+import { getProfile, noteSetupAnswered, updateProfile, type Profile } from '../../src/db/dao/profile';
 import { syncSoon } from '../../src/notify/port';
-import type { DraftSleep } from '../../src/onboarding/draft';
+import { sleepToEdit, type DraftSleep } from '../../src/onboarding/draft';
 import { StepLayout } from '../../src/onboarding/StepLayout';
 import { SleepForm } from '../../src/support/SleepForm';
 import { Button } from '../../src/ui/Button';
 
-/** Bedtime reminders, from Settings. */
+/** Bedtime reminders, from Settings or Home's setup list (which passes ?suggest=1). */
 export default function SleepEditor() {
   const router = useRouter();
   const db = useSQLiteContext();
+  const { suggest } = useLocalSearchParams<{ suggest?: string }>();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sleep, setSleep] = useState<DraftSleep | null>(null);
 
@@ -20,15 +21,17 @@ export default function SleepEditor() {
     (async () => {
       const p = await getProfile(db);
       setProfile(p);
-      if (p?.bedtimeMin != null && p.wakeMin != null) setSleep({ bedtimeMin: p.bedtimeMin, wakeMin: p.wakeMin, windDown: p.windDown, stillUp: p.stillUp });
+      if (p) setSleep(sleepToEdit(p, suggest === '1'));
     })();
-  }, [db]);
+  }, [db, suggest]);
 
   const save = async () => {
     await updateProfile(
       db,
       sleep ? { bedtimeMin: sleep.bedtimeMin, wakeMin: sleep.wakeMin, windDown: sleep.windDown, stillUp: sleep.stillUp } : { bedtimeMin: null, wakeMin: null },
     );
+    // Bedtime reminders left off still answers Home's setup step.
+    await noteSetupAnswered(db, 'sleep');
     syncSoon(db);
     router.back();
   };

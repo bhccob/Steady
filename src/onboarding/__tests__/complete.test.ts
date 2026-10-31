@@ -7,7 +7,7 @@ import { listConditions } from '../../db/dao/support';
 import { migrate } from '../../db/migrations';
 import { createTestDb } from '../../test-utils/sqlite';
 import { completeOnboarding } from '../complete';
-import { emptyDraft, newDraftMed, type OnboardingDraft } from '../draft';
+import { DEFAULT_SLEEP, emptyDraft, newDraftMed, type OnboardingDraft } from '../draft';
 
 const NOW = '2026-10-25T09:00:00.000Z';
 
@@ -22,6 +22,13 @@ function draft(patch: Partial<OnboardingDraft> = {}): OnboardingDraft {
 }
 
 describe('completeOnboarding', () => {
+  it('saves a start with no pills, no name and bedtime reminders off: setup asks only 18+ and the safety note', async () => {
+    const db = await freshDb();
+    await completeOnboarding(db, { ...emptyDraft(), ageConfirmed: true }, { timezone: 'UTC', now: NOW });
+    expect(await listMeds(db)).toEqual([]);
+    expect(await getProfile(db)).toMatchObject({ displayName: '', bedtimeMin: null, wakeMin: null, supportLevel: 'light', setupHiddenAt: null });
+  });
+
   it('saves the profile with consent timestamps and a level suggested from conditions', async () => {
     const db = await freshDb();
     await completeOnboarding(db, draft({ conditions: [{ name: 'Psychosis', severity: 2 }] }), { timezone: 'Europe/Amsterdam', now: NOW });
@@ -75,9 +82,9 @@ describe('completeOnboarding', () => {
     expect(await listGuardians(db)).toEqual([expect.objectContaining({ displayName: 'Jo', relationship: 'Friend', channel: 'wechat', contact: 'jo_w', consentedAt: null })]);
   });
 
-  it('saves bedtime reminders at 23:00 and 07:00 when they were left on', async () => {
+  it('saves bedtime reminders at 23:00 and 07:00 when the draft has them', async () => {
     const db = await freshDb();
-    await completeOnboarding(db, draft(), { timezone: 'UTC', now: NOW });
+    await completeOnboarding(db, draft({ sleep: { ...DEFAULT_SLEEP } }), { timezone: 'UTC', now: NOW });
     expect(await getProfile(db)).toMatchObject({ bedtimeMin: 1380, wakeMin: 420, windDown: true, stillUp: null });
   });
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { supportEditNote } from '../../src/account/copy';
-import { getProfile, updateProfile, type Profile } from '../../src/db/dao/profile';
+import { getProfile, noteSetupAnswered, updateProfile, type Profile } from '../../src/db/dao/profile';
 import { listConditions, replaceConditions } from '../../src/db/dao/support';
 import { syncSoon } from '../../src/notify/port';
 import { StepLayout } from '../../src/onboarding/StepLayout';
@@ -35,6 +35,8 @@ export default function SupportEditor() {
     if (!conditions || !profile) return;
     await replaceConditions(db, conditions);
     if (!profile.supportLevelChosen) await updateProfile(db, { supportLevel: suggestedLevel(conditions) });
+    // Saved with nothing picked still answers Home's setup step.
+    await noteSetupAnswered(db, 'support');
     syncSoon(db);
     useApp.getState().bumpData();
     router.back();

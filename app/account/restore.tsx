@@ -70,7 +70,7 @@ export default function AccountRestore() {
   // Signed out here first, so this fresh start can never be offered as a replacement for the backup.
   const setUpWithout = async () => {
     await forgetAccountHere(clearSession);
-    router.replace('/onboarding/name');
+    router.replace('/onboarding/age');
   };
 
   const remindersThenHome = async () => {
