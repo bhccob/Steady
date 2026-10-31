@@ -1,6 +1,7 @@
 import type { AccountStore } from './accountTypes';
 import { hmac, sameHash, sha256 } from './core';
 import type { Mailer } from './mail';
+import { open, seal } from './seal';
 import type { Store } from './types';
 
 // Optional accounts: sign in with an emailed 6-digit code, then keep one sealed backup
@@ -27,6 +28,10 @@ const CODE_TRIES = 5;
 const RESEND_AFTER_MS = 30 * 1000;
 const CODES_PER_HOUR = 5;
 const REQUESTS_PER_IP = 120;
+/** The biggest backup accepted, as JSON text (spec: 10 MB). */
+const MAX_BACKUP_CHARS = 10_000_000;
+/** D1 rows top out at 2 MB; a sealed body this big is refused rather than failing in the database. */
+const MAX_SEALED_CHARS = 1_900_000;
 
 const DEVICE = /^[A-Za-z0-9_-]{22}$/;
 const CODE = /^\d{6}$/;
@@ -117,7 +122,68 @@ export async function handleAccount(req: Request, deps: AccountDeps): Promise<Re
     return reply(200, { token, isNew, hasBackup: latest !== null, savedAt: latest?.savedAt ?? null });
   }
 
+  // Everything below needs a signed-in device.
+  const session = await authorise(req, store);
+  if (!session) return reply(401);
+  await store.touchSession(session.tokenHash, now);
+  const { account } = session;
+
+  if (req.method === 'GET' && path === '/v1/account') {
+    const latest = await store.getBackup(account.id, 0);
+    return reply(200, { active: account.activeDevice === session.deviceId, savedAt: latest?.savedAt ?? null });
+  }
+
+  if (req.method === 'GET' && path === '/v1/account/backup') {
+    const latest = await store.getBackup(account.id, 0);
+    if (!latest) return reply(404);
+    const data = JSON.parse(await open(deps.backupKey, account.id, latest)) as unknown;
+    return reply(200, { savedAt: latest.savedAt, schemaVersion: latest.schemaVersion, data });
+  }
+
+  if (req.method === 'PUT' && path === '/v1/account/backup') {
+    const text = await req.text();
+    if (text.length > MAX_BACKUP_CHARS) return reply(413);
+    if (account.activeDevice !== session.deviceId) return reply(409, { reason: 'other-device' });
+    let body: { schemaVersion?: unknown; data?: unknown } | null;
+    try {
+      body = JSON.parse(text) as { schemaVersion?: unknown; data?: unknown } | null;
+    } catch {
+      return reply(400);
+    }
+    const schemaVersion = body?.schemaVersion;
+    if (typeof schemaVersion !== 'number' || !Number.isInteger(schemaVersion) || schemaVersion < 0 || !body?.data || typeof body.data !== 'object') return reply(400);
+    const sealed = await seal(deps.backupKey, account.id, JSON.stringify(body.data));
+    if (sealed.body.length > MAX_SEALED_CHARS) return reply(413);
+    await store.putBackup({ accountId: account.id, slot: 0, deviceId: session.deviceId, savedAt: now, schemaVersion, ...sealed });
+    return reply(204);
+  }
+
+  if (req.method === 'POST' && path === '/v1/account/claim') {
+    await store.setActiveDevice(account.id, session.deviceId);
+    return reply(204);
+  }
+
+  if (req.method === 'DELETE' && path === '/v1/account/session') {
+    await store.deleteSession(session.tokenHash);
+    return reply(204);
+  }
+
+  if (req.method === 'DELETE' && path === '/v1/account/sessions') {
+    await store.deleteSessions(account.id);
+    return reply(204);
+  }
+
+  if (req.method === 'DELETE' && path === '/v1/account') {
+    await store.deleteAccount(account.id);
+    return reply(204);
+  }
+
   return reply(404);
+}
+
+async function authorise(req: Request, store: AccountStore) {
+  const match = /^Bearer ([A-Za-z0-9_-]{43})$/.exec(req.headers.get('Authorization') ?? '');
+  return match ? store.sessionByToken(await sha256(match[1]!)) : null;
 }
 
 /** A uniform 6-digit code: rejection sampling, so no number is likelier than another. */
