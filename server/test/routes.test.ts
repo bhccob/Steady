@@ -74,6 +74,16 @@ describe('routes', () => {
     expect(preflight.headers.get('Access-Control-Allow-Origin')).toBe(ORIGIN);
   });
 
+  it('answers the web app at each of its addresses, and names the one that asked', async () => {
+    const both = { ...deps(), allowedOrigin: `https://steadyapp.example, ${ORIGIN}` };
+    for (const origin of ['https://steadyapp.example', ORIGIN]) {
+      const preflight = await handle(req('OPTIONS', '/v1/install', undefined, { Origin: origin }), both);
+      expect(preflight.status).toBe(204);
+      expect(preflight.headers.get('Access-Control-Allow-Origin')).toBe(origin);
+    }
+    expect((await handle(req('OPTIONS', '/v1/install', undefined, { Origin: 'https://steadyapp.example.evil' }), both)).status).toBe(403);
+  });
+
   it('rate-limits writes', async () => {
     await register();
     let last = 0;

@@ -18,7 +18,8 @@ migrations_dir = "migrations"
 crons = ["* * * * *"]
 
 [vars]
-ALLOWED_ORIGIN = "https://steady-beta-five.vercel.app"
+# The web app: its own address first, then the Vercel one it started at (comma-separated).
+ALLOWED_ORIGIN = "https://steadyapp.cc,https://steady-beta-five.vercel.app"
 MAIL_FROM = "Steady <sign-in@steadyapp.cc>"
 VAPID_SUBJECT = "https://steady-beta-five.vercel.app"
 # VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are secrets: `wrangler secret put` (see scripts/vapid-keys.mjs).

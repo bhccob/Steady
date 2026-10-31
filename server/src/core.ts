@@ -18,14 +18,21 @@ const KEY = /^[A-Za-z0-9_-]{1,200}$/;
 export interface Deps {
   store: Store;
   now: number;
+  /** The web app's addresses, comma-separated (it is served at more than one). */
   allowedOrigin: string;
   /** Secret: rate limits count a keyed hash of each address, never the address. */
   ipKey: string;
 }
 
+/** True when `origin` is one of the comma-separated `allowed` addresses, exactly. */
+export function allowsOrigin(allowed: string, origin: string | null): origin is string {
+  return origin !== null && allowed.split(',').some((a) => a.trim() === origin);
+}
+
 export async function handle(req: Request, { store, now, allowedOrigin, ipKey }: Deps): Promise<Response> {
-  if (req.headers.get('Origin') !== allowedOrigin) return new Response(null, { status: 403 });
-  const cors = { 'Access-Control-Allow-Origin': allowedOrigin, Vary: 'Origin' };
+  const origin = req.headers.get('Origin');
+  if (!allowsOrigin(allowedOrigin, origin)) return new Response(null, { status: 403 });
+  const cors = { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' };
   const reply = (status: number) => new Response(null, { status, headers: cors });
 
   if (req.method === 'OPTIONS') {

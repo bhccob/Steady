@@ -1,5 +1,5 @@
 import type { AccountStore } from './accountTypes';
-import { hmac, sameHash, sha256 } from './core';
+import { allowsOrigin, hmac, sameHash, sha256 } from './core';
 import type { Mailer } from './mail';
 import { fromBase64, open, seal, toBase64 } from './seal';
 import type { Store } from './types';
@@ -64,8 +64,8 @@ export async function handleAccount(req: Request, deps: AccountDeps): Promise<Re
   const { store, hits, mailer, now, allowedOrigin, ipKey, accountKey } = deps;
   // The Android app sends no Origin; browsers always do, and only the web app's is welcome.
   const origin = req.headers.get('Origin');
-  if (origin !== null && origin !== allowedOrigin) return new Response(null, { status: 403 });
-  const cors: Record<string, string> = origin ? { 'Access-Control-Allow-Origin': allowedOrigin, Vary: 'Origin' } : {};
+  if (origin !== null && !allowsOrigin(allowedOrigin, origin)) return new Response(null, { status: 403 });
+  const cors: Record<string, string> = origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {};
   const reply = (status: number, body?: unknown) =>
     new Response(body === undefined ? null : JSON.stringify(body), { status, headers: body === undefined ? cors : { ...cors, 'Content-Type': 'application/json' } });
 

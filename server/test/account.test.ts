@@ -142,6 +142,14 @@ describe('codes and signing in', () => {
     expect(install.status).toBe(403);
   });
 
+  it('serves the web app at each of its addresses', async () => {
+    const both = { ...deps(), allowedOrigin: `https://steadyapp.example,${ORIGIN}` };
+    const res = await handleAccount(req('POST', '/v1/account/code', { email: 'sam@example.com', consent: true }, { Origin: 'https://steadyapp.example' }), both);
+    expect(res.status).toBe(204);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://steadyapp.example');
+    expect((await handleAccount(req('GET', '/v1/account', undefined, { Origin: 'https://other.example' }), both)).status).toBe(403);
+  });
+
   it('keeps health words out of every email', async () => {
     await signInFresh('sam@example.com', DEVICE_A);
     await signInFresh('sam@example.com', DEVICE_B);
