@@ -150,3 +150,11 @@ export function d1AccountStore(db: D1Database): AccountStore {
     },
   };
 }
+
+/** Codes only live 10 minutes and sends only count for an hour; drop the old ones. */
+export async function pruneAccounts(db: D1Database, now: number): Promise<void> {
+  await db.batch([
+    db.prepare('DELETE FROM login_codes WHERE expires_at < ?').bind(now),
+    db.prepare('DELETE FROM code_sends WHERE sent_at < ?').bind(now - 60 * 60 * 1000),
+  ]);
+}

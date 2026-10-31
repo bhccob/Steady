@@ -22,3 +22,21 @@ export function resendMailer(apiKey: string, from: string, f: typeof fetch = fet
     },
   };
 }
+
+/**
+ * The mailer for this Worker. `MAIL_MODE = "log"` (only ever set on the `wrangler dev` command
+ * line) prints emails for local testing; otherwise Resend sends them. Without a Resend key nothing
+ * is sent, so code requests answer 503 instead of pretending.
+ */
+export function mailerFor(env: { MAIL_MODE?: string; RESEND_API_KEY?: string; MAIL_FROM: string }): Mailer {
+  if (env.MAIL_MODE === 'log') {
+    return {
+      async send(to, subject, text) {
+        console.log(`[local email] to ${to}: ${subject}\n${text}`);
+        return true;
+      },
+    };
+  }
+  if (!env.RESEND_API_KEY) return { send: async () => false };
+  return resendMailer(env.RESEND_API_KEY, env.MAIL_FROM);
+}
