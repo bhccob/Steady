@@ -6,6 +6,10 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AccountError, createAccountApi } from '../../src/account/api';
+import { ACCOUNT_URL } from '../../src/account/config';
+import { savedAgo } from '../../src/account/savedAgo';
+import { clearSession, loadSession } from '../../src/account/session';
 import { listHarderTimes } from '../../src/db/dao/harderTimes';
 import { listMeds, type Med } from '../../src/db/dao/meds';
 import { getProfile, updateProfile, type Profile } from '../../src/db/dao/profile';
@@ -42,7 +46,10 @@ interface SettingsData {
   harderTimeCount: number;
 }
 
-type Sheet = 'name' | 'quiet' | 'delete' | 'disclaimer' | null;
+type Sheet = 'name' | 'quiet' | 'delete' | 'disclaimer' | 'signout' | 'signoutAll' | 'deleteAccount' | null;
+
+const accountApi = createAccountApi(ACCOUNT_URL);
+const TRY_AGAIN = "That didn't go through. Check your connection and try again.";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -87,6 +94,10 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const openHelp = useApp((s) => s.openHelp);
   const openPillSheet = useApp((s) => s.openPillSheet);
+  const account = useApp((s) => s.account);
+  const [accountNote, setAccountNote] = useState('');
+  // "saved 2 min ago" counts from when Settings last opened; a newer save reads "just now".
+  const [now, setNow] = useState(() => Date.now());
   const [data, setData] = useState<SettingsData | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -123,6 +134,7 @@ export default function SettingsScreen() {
   };
 
   const load = useCallback(async () => {
+    setNow(Date.now());
     const result = await loadData(async (): Promise<SettingsData | null> => {
       const profile = await getProfile(db);
       if (!profile) return null;
@@ -196,9 +208,66 @@ export default function SettingsScreen() {
     }
   };
 
+  /** Signs out here, or everywhere. If the server already forgot this device, it signs out here anyway. */
+  const signOut = async (everywhere: boolean) => {
+    setSheet(null);
+    setAccountNote('');
+    const session = await loadSession();
+    try {
+      if (session) await (everywhere ? accountApi.signOutEverywhere(session.token) : accountApi.signOut(session.token));
+    } catch (e) {
+      if (!(e instanceof AccountError && e.status === 401)) {
+        setAccountNote(TRY_AGAIN);
+        return;
+      }
+    }
+    await clearSession();
+    useApp.getState().setAccount(null);
+    setAccountNote(everywhere ? 'Signed out on every device. Your data stays on each one.' : 'Signed out. Your data stays on this device.');
+  };
+
+  const deleteAccount = async () => {
+    if (confirmWord.trim().toLowerCase() !== 'delete') return;
+    setSheet(null);
+    setAccountNote('');
+    const session = await loadSession();
+    try {
+      if (session) await accountApi.deleteAccount(session.token);
+    } catch (e) {
+      if (!(e instanceof AccountError && e.status === 401)) {
+        setAccountNote(TRY_AGAIN);
+        return;
+      }
+    }
+    await clearSession();
+    useApp.getState().setAccount(null);
+    setAccountNote('Your account and backups are deleted from the server. Your data stays on this device.');
+  };
+
+  /** Another device took the backup over; make this one the backup again. */
+  const useThisPhone = async () => {
+    setAccountNote('');
+    const session = await loadSession();
+    if (!session) return;
+    try {
+      await accountApi.claim(session.token);
+      useApp.getState().setAccount({ email: session.email, savedAt: session.savedAt, state: 'ok' });
+      await useApp.getState().backupNow();
+    } catch {
+      setAccountNote(TRY_AGAIN);
+    }
+  };
+
   const deleteAll = async () => {
     if (confirmWord.trim().toLowerCase() !== 'delete') return;
     setSheet(null);
+    // Signed in? Sign out here too, so setting up again can't overwrite the backup with a fresh start.
+    const session = await loadSession();
+    if (session) {
+      await accountApi.signOut(session.token).catch(() => {});
+      await clearSession();
+      useApp.getState().setAccount(null);
+    }
     await deleteEverything(db);
     removeExportFiles();
     await cancelAllScheduledNotificationsAsync().catch(() => {});
@@ -222,6 +291,36 @@ export default function SettingsScreen() {
 
           <Section title="You">
             <Row label="Name" value={profile.displayName.trim() || 'Not set'} onPress={() => open('name')} />
+          </Section>
+
+          <Section title="Account">
+            {account ? (
+              <>
+                <Row label="Email" value={account.email} />
+                {account.state === 'elsewhere' ? (
+                  <>
+                    <Row label="Backup" value="Your backup is now on another device" />
+                    <Button variant="link" label="Use this phone" onPress={useThisPhone} style={styles.add} />
+                  </>
+                ) : (
+                  <Row
+                    label="Backup"
+                    value={`${account.savedAt === null ? 'not saved yet' : `saved ${savedAgo(account.savedAt, now)}`}${account.state === 'offline' ? ', will retry' : ''}`}
+                    onPress={() => useApp.getState().backupNow()}
+                  />
+                )}
+                <Row label="Sign out" onPress={() => open('signout')} />
+                <Row label="Sign out everywhere" onPress={() => open('signoutAll')} />
+                <Row label="Delete my account" onPress={() => open('deleteAccount')} />
+              </>
+            ) : (
+              <Row label="Back up with email" value="Optional" onPress={() => router.push({ pathname: '/account/email', params: { from: 'settings' } })} />
+            )}
+            {accountNote ? (
+              <AppText variant="caption" accessibilityRole="alert" style={styles.note}>
+                {accountNote}
+              </AppText>
+            ) : null}
           </Section>
 
           <Section title="Pills and times">
@@ -251,7 +350,9 @@ export default function SettingsScreen() {
                   </AppText>
                 ) : null}
                 <AppText variant="caption" tone="secondary">
-                  {"Steady's server keeps only when your reminders are due. Never your name, pills or moods."}
+                  {account
+                    ? "Steady's server keeps when your reminders are due. You're signed in, so Steady's server also keeps your backup."
+                    : "Steady's server keeps only when your reminders are due. Never your name, pills or moods."}
                 </AppText>
               </>
             ) : null}
@@ -316,9 +417,11 @@ export default function SettingsScreen() {
             <Row label="Version" value={version} />
           </Section>
           <AppText variant="caption" tone="secondary" style={styles.footer}>
-            {Platform.OS === 'web'
-              ? 'Everything stays on this phone except your reminder times. No account, no tracking.'
-              : 'Everything stays on this phone. No account, no tracking.'}
+            {account
+              ? "You're signed in, so Steady's server keeps your backup. No tracking."
+              : Platform.OS === 'web'
+                ? 'Everything stays on this phone except your reminder times. No account, no tracking.'
+                : 'Everything stays on this phone. No account, no tracking.'}
           </AppText>
         </View>
       </ScrollView>
@@ -344,7 +447,7 @@ export default function SettingsScreen() {
         visible={sheet === 'delete'}
         onClose={() => setSheet(null)}
         title="Delete everything?"
-        subtitle="This removes your pills, doses, moods and guardians from this phone. It can't be undone."
+        subtitle={`This removes your pills, doses, moods and guardians from this phone. It can't be undone.${account ? " Your backup on Steady's server stays until you delete your account." : ''}`}
       >
         <View style={styles.sheetBody}>
           <Button variant="link" label="Export my data first" onPress={exportNow} style={styles.add} />
@@ -363,6 +466,50 @@ export default function SettingsScreen() {
             style={confirmWord.trim().toLowerCase() === 'delete' ? undefined : styles.dim}
           />
           <Button variant="secondary" label="Keep my data" onPress={() => setSheet(null)} />
+        </View>
+      </BottomSheet>
+
+      <BottomSheet visible={sheet === 'signout'} onClose={() => setSheet(null)} title="Sign out?" subtitle="Your data stays on this device. Backups stop until you sign in again.">
+        <View style={styles.sheetBody}>
+          <Button label="Sign out" onPress={() => signOut(false)} />
+          <Button variant="secondary" label="Stay signed in" onPress={() => setSheet(null)} />
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
+        visible={sheet === 'signoutAll'}
+        onClose={() => setSheet(null)}
+        title="Sign out everywhere?"
+        subtitle="Every phone and browser signed in to this account is signed out, this one too. The data on each stays."
+      >
+        <View style={styles.sheetBody}>
+          <Button label="Sign out everywhere" onPress={() => signOut(true)} />
+          <Button variant="secondary" label="Stay signed in" onPress={() => setSheet(null)} />
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
+        visible={sheet === 'deleteAccount'}
+        onClose={() => setSheet(null)}
+        title="Delete your account?"
+        subtitle="This removes your account and backups from Steady's server. The data on this device stays. It can't be undone."
+      >
+        <View style={styles.sheetBody}>
+          <TextField
+            label={'Type "delete" to confirm'}
+            placeholder="delete"
+            value={confirmWord}
+            onChangeText={setConfirmWord}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <Button
+            label="Delete my account"
+            onPress={deleteAccount}
+            accessibilityHint={confirmWord.trim().toLowerCase() === 'delete' ? undefined : 'Type delete first'}
+            style={confirmWord.trim().toLowerCase() === 'delete' ? undefined : styles.dim}
+          />
+          <Button variant="secondary" label="Keep my account" onPress={() => setSheet(null)} />
         </View>
       </BottomSheet>
 
