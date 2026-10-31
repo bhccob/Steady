@@ -1,4 +1,5 @@
 import type { SteadyExport } from '../settings/data';
+import { packBackup, unpackBackup } from './pack';
 
 // Talks to the account routes on Steady's server (server/src/account.ts). Every call throws an
 // AccountError when the server doesn't answer 2xx, so callers can tell "try again" from "refused".
@@ -66,14 +67,15 @@ export function createAccountApi(baseUrl: string, f: typeof fetch = fetch): Acco
     },
     async getBackup(token) {
       try {
-        return await (await call('GET', '/v1/account/backup', token)).json();
+        const { savedAt, schemaVersion, gz } = (await (await call('GET', '/v1/account/backup', token)).json()) as { savedAt: number; schemaVersion: number; gz: string };
+        return { savedAt, schemaVersion, data: unpackBackup(gz) };
       } catch (e) {
         if (e instanceof AccountError && e.status === 404) return null;
         throw e;
       }
     },
     async putBackup(token, backup) {
-      await call('PUT', '/v1/account/backup', token, { schemaVersion: backup.schemaVersion, data: backup });
+      await call('PUT', '/v1/account/backup', token, { schemaVersion: backup.schemaVersion, gz: packBackup(backup) });
     },
     async claim(token) {
       await call('POST', '/v1/account/claim', token);

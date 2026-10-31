@@ -26,6 +26,7 @@
 - **The server never stores an email address in plain text.** It keeps `emailHash = HMAC-SHA256(ACCOUNT_KEY, "email|" + normalised email)`, where normalised means trimmed and lowercased.
 - **Codes and session tokens are stored hashed.** Tokens are 32 random bytes, base64url (43 characters).
 - **Backups are stored encrypted at rest:** gzip, then AES-GCM-256 with `BACKUP_KEY`, a random 12-byte IV, and the account id as additional data. The server keeps the latest backup in slot 0 and the one before it in slot 1. The largest accepted body is 10 MB of JSON (413 above that).
+  - *Changed after the final review (owner's decision, 2026-10-31):* the phone gzips the backup (`src/account/pack.ts`, fflate) and sends `{ schemaVersion, gz }`; the server only encrypts those bytes and gives the same `gz` back. This keeps years of history inside the free Workers plan's 10 ms CPU limit. The size limit is now 1.9 M characters of packed backup (about 20 years of history), since the server no longer sees the JSON.
 - **One device at a time.** Only the account's active device may save a backup (409 `other-device` otherwise). Signing in and then restoring, or choosing "Keep this phone's data", makes that device active.
 - **Origin rule for `/v1/account/*`:** a request with no `Origin` (the Android app) or `Origin` = `ALLOWED_ORIGIN` is served. Any other origin gets 403. The reminder routes keep their rule (`Origin` must equal `ALLOWED_ORIGIN`).
 - **Emails:**

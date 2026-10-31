@@ -1,7 +1,7 @@
 import type { AccountStore } from './accountTypes';
 import { hmac, sameHash, sha256 } from './core';
 import type { Mailer } from './mail';
-import { open, seal } from './seal';
+import { fromBase64, open, seal, toBase64 } from './seal';
 import type { Store } from './types';
 
 // Optional accounts: sign in with an emailed 6-digit code, then keep one sealed backup
@@ -34,14 +34,17 @@ const CODES_PER_IP_HOUR = 10;
 const EMAILS_PER_DAY = 90;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
-/** The biggest backup accepted, as JSON text (spec: 10 MB). */
-const MAX_BACKUP_CHARS = 10_000_000;
-/** D1 rows top out at 2 MB; a sealed body this big is refused rather than failing in the database. */
-const MAX_SEALED_CHARS = 1_900_000;
+/**
+ * D1 rows top out at 2 MB and a sealed body is about as long as the packed backup it seals, so a
+ * bigger body is refused rather than failing in the database. A year of history packs to about 100 KB.
+ */
+const MAX_BODY_CHARS = 1_900_000;
 
 const DEVICE = /^[A-Za-z0-9_-]{22}$/;
 const CODE = /^\d{6}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Gzip as padded base64 (gzip's first bytes read H4sI). With a length that is a multiple of 4, decoding it can't fail. */
+const PACKED = /^H4sI[A-Za-z0-9+/]*={0,2}$/;
 
 export const NEW_DEVICE_SUBJECT = 'New sign-in to Steady';
 export const NEW_DEVICE_TEXT = "You signed in to Steady on a new device. If this wasn't you, open Steady on your phone and choose Sign out everywhere in Settings.";
@@ -149,24 +152,23 @@ export async function handleAccount(req: Request, deps: AccountDeps): Promise<Re
   if (req.method === 'GET' && path === '/v1/account/backup') {
     const latest = await store.getBackup(account.id, 0);
     if (!latest) return reply(404);
-    const data = JSON.parse(await open(deps.backupKey, account.id, latest)) as unknown;
-    return reply(200, { savedAt: latest.savedAt, schemaVersion: latest.schemaVersion, data });
+    return reply(200, { savedAt: latest.savedAt, schemaVersion: latest.schemaVersion, gz: toBase64(await open(deps.backupKey, account.id, latest)) });
   }
 
   if (req.method === 'PUT' && path === '/v1/account/backup') {
     const text = await req.text();
-    if (text.length > MAX_BACKUP_CHARS) return reply(413);
+    if (text.length > MAX_BODY_CHARS) return reply(413);
     if (account.activeDevice !== session.deviceId) return reply(409, { reason: 'other-device' });
-    let body: { schemaVersion?: unknown; data?: unknown } | null;
+    let body: { schemaVersion?: unknown; gz?: unknown } | null;
     try {
-      body = JSON.parse(text) as { schemaVersion?: unknown; data?: unknown } | null;
+      body = JSON.parse(text) as { schemaVersion?: unknown; gz?: unknown } | null;
     } catch {
       return reply(400);
     }
-    const schemaVersion = body?.schemaVersion;
-    if (typeof schemaVersion !== 'number' || !Number.isInteger(schemaVersion) || schemaVersion < 0 || !body?.data || typeof body.data !== 'object') return reply(400);
-    const sealed = await seal(deps.backupKey, account.id, JSON.stringify(body.data));
-    if (sealed.body.length > MAX_SEALED_CHARS) return reply(413);
+    // The phone packs the backup (src/account/pack.ts); the server only seals what it is sent.
+    const schemaVersion = body?.schemaVersion, gz = body?.gz;
+    if (typeof schemaVersion !== 'number' || !Number.isInteger(schemaVersion) || schemaVersion < 0 || typeof gz !== 'string' || gz.length % 4 !== 0 || !PACKED.test(gz)) return reply(400);
+    const sealed = await seal(deps.backupKey, account.id, fromBase64(gz));
     await store.putBackup({ accountId: account.id, slot: 0, deviceId: session.deviceId, savedAt: now, schemaVersion, ...sealed });
     return reply(204);
   }

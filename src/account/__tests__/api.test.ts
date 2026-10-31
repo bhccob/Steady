@@ -1,4 +1,5 @@
 import { AccountError, createAccountApi } from '../api';
+import { packBackup, unpackBackup } from '../pack';
 
 type Call = { url: string; init: RequestInit };
 
@@ -44,12 +45,16 @@ describe('account api', () => {
     await expect(createAccountApi('https://api.example', fakeFetch([{ status: 500 }]).f).claim('t'.repeat(43))).rejects.toBeInstanceOf(AccountError);
   });
 
-  it('sends a backup with its schema version, and reads none as null', async () => {
-    const { f, calls } = fakeFetch([{ status: 204 }, { status: 404 }]);
+  it('sends a backup packed, with its schema version, unpacks the one that comes back, and reads none as null', async () => {
+    const backup = { app: 'Steady' as const, schemaVersion: 7, exportedAt: 'now', tables: { profile: [{ display_name: 'sam' }] } as never };
+    const { f, calls } = fakeFetch([{ status: 204 }, { status: 200, body: { savedAt: 1, schemaVersion: 7, gz: packBackup(backup) } }, { status: 404 }]);
     const api = createAccountApi('https://api.example', f);
-    const backup = { app: 'Steady' as const, schemaVersion: 7, exportedAt: 'now', tables: {} as never };
     await api.putBackup('t'.repeat(43), backup);
-    expect(body(calls[0]!)).toEqual({ schemaVersion: 7, data: backup });
+    const sent = body(calls[0]!) as { schemaVersion: number; gz: string };
+    expect(Object.keys(sent).sort()).toEqual(['gz', 'schemaVersion']);
+    expect(sent.schemaVersion).toBe(7);
+    expect(unpackBackup(sent.gz)).toEqual(backup);
+    expect(await api.getBackup('t'.repeat(43))).toEqual({ savedAt: 1, schemaVersion: 7, data: backup });
     expect(await api.getBackup('t'.repeat(43))).toBeNull();
   });
 });

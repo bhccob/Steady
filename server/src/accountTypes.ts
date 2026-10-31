@@ -1,6 +1,6 @@
 // What the server keeps for accounts (spec: docs/superpowers/specs/2026-10-30-email-account-backup-design.md).
 // Never an email address: only a keyed hash of it. Codes and tokens are kept hashed too, and a
-// backup body is sealed (gzip + AES-GCM) before it gets here.
+// backup body is sealed (AES-GCM over the gzip the phone sent) before it gets here.
 
 export interface Account {
   id: string;
