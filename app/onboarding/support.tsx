@@ -1,8 +1,10 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
+import { supportStepNote } from '../../src/account/copy';
 import { StepLayout } from '../../src/onboarding/StepLayout';
 import { useOnboarding } from '../../src/onboarding/store';
+import { useApp } from '../../src/state/app';
 import { ConditionPicker } from '../../src/support/ConditionPicker';
 import { Button } from '../../src/ui/Button';
 import { AppText } from '../../src/ui/Text';
@@ -21,11 +23,13 @@ export default function SupportStep() {
     router.push('/onboarding/sleep');
   };
 
+  const signedIn = useApp((s) => s.account !== null);
+
   return (
     <StepLayout
       step={5}
       title="What are you working through?"
-      subtitle="Optional and private. Pick any that fit, or none. It stays on this phone and helps Steady know how closely to look out for you."
+      subtitle={supportStepNote(signedIn)}
       footer={
         <>
           <AppText variant="caption" tone="secondary" style={styles.center} accessibilityLiveRegion="polite">

@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AccountBridge } from '../src/account/AccountBridge';
 import { DB_NAME, migrate } from '../src/db/migrations';
 import { usePerfProbe } from '../src/lib/perf';
 import { NotificationBridge } from '../src/notify/NotificationBridge';
@@ -47,6 +48,7 @@ export default function RootLayout() {
       <SQLiteProvider databaseName={DB_NAME} onInit={migrate}>
         <StatusBar style={theme.name === 'dark' ? 'light' : 'dark'} />
         <NotificationBridge />
+        <AccountBridge />
         <PrivacyGate />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background[0] } }} />
       </SQLiteProvider>

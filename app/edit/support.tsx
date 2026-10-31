@@ -3,6 +3,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { supportEditNote } from '../../src/account/copy';
 import { getProfile, updateProfile, type Profile } from '../../src/db/dao/profile';
 import { listConditions, replaceConditions } from '../../src/db/dao/support';
 import { syncSoon } from '../../src/notify/port';
@@ -21,6 +22,7 @@ export default function SupportEditor() {
   const db = useSQLiteContext();
   const [conditions, setConditions] = useState<Condition[] | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const signedIn = useApp((s) => s.account !== null);
 
   useEffect(() => {
     (async () => {
@@ -43,7 +45,7 @@ export default function SupportEditor() {
   return (
     <StepLayout
       title="What I'm working through"
-      subtitle="Private, on this phone only. It helps Steady know how closely to look out for you."
+      subtitle={supportEditNote(signedIn)}
       footer={
         <>
           {level ? (

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steady · Privacy</title>
+<meta name="description" content="What Steady keeps, where, and how to delete it.">
+<style>
+  :root { --bg: #F5F3EF; --ink: #1B1613; --soft: rgba(27, 22, 19, 0.66); --line: rgba(27, 22, 19, 0.1); --accent: #9A7D52; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #161310; --ink: #F3ECE2; --soft: rgba(243, 236, 226, 0.68); --line: rgba(243, 236, 226, 0.12); --accent: #CDB38C; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 40px 20px 64px; }
+  h1 { font-size: 30px; line-height: 1.15; letter-spacing: -0.5px; margin: 0 0 8px; }
+  h2 { font-size: 18px; margin: 32px 0 6px; }
+  p, li { color: var(--ink); }
+  .soft { color: var(--soft); }
+  ul { padding-left: 20px; margin: 6px 0; }
+  li { margin: 4px 0; }
+  a { color: var(--accent); }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Privacy</h1>
+  <p class="soft">Steady, a calm pill reminder. Last updated 31 October 2026.</p>
+
+  <h2>Without an account</h2>
+  <p>Everything stays on your device. In the web app, only the times your reminders are due go to Steady's server, so it can send them. Never your name, pills or moods.</p>
+
+  <h2>With an account (sign in with email)</h2>
+  <p>Signing in is optional. If you do, Steady keeps a backup so you can pick up on a new phone.</p>
+  <p><strong>What Steady keeps:</strong></p>
+  <ul>
+    <li>A backup of your Steady data: your pills and times, marks, moods and check-ins, sleep settings, your answers about what you're working through, the people you add and how to reach them, and your settings.</li>
+    <li>When the backup was saved, which device saves it, and when you signed in.</li>
+  </ul>
+  <p><strong>What Steady doesn't keep:</strong> your email address itself. The server keeps a scrambled fingerprint of it, which is enough to find your account when you type your email, but not to read it back.</p>
+  <p><strong>How it's protected:</strong> it travels over an encrypted connection and is stored encrypted on Cloudflare's servers, with the key kept apart from the data. Steady can open your backup in order to give it back to you. It is never used for ads, tracking or analytics, and never sold or shared.</p>
+  <p><strong>Emails:</strong> sign-in codes are sent by Resend, which handles your email address only to deliver them. Steady's emails contain a sign-in code or a new-sign-in notice, and nothing about your health.</p>
+
+  <h2>Deleting</h2>
+  <p>In Steady, open Settings, then Account, then <strong>Delete my account</strong>. Your account and backups are removed from the server straight away. What's on your device stays until you delete it there (Settings, then Delete everything).</p>
+
+  <h2>Questions</h2>
+  <p>For questions or deletion requests, write to <a href="mailto:privacy@steadyapp.cc">privacy@steadyapp.cc</a>.</p>
+
+  <hr>
+  <p class="soft">Steady isn't medical advice and doesn't replace care from your doctor or pharmacist.</p>
+</main>
+</body>
+</html>

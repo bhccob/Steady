@@ -5,6 +5,7 @@ import { requestPermissionsAsync } from '../../src/lib/notifications';
 import { turnOnReminders } from '../../src/notify/port';
 import { StepLayout } from '../../src/onboarding/StepLayout';
 import { useOnboarding } from '../../src/onboarding/store';
+import { useApp } from '../../src/state/app';
 import { LEVEL_RULES, suggestedLevel } from '../../src/support/level';
 import { useTheme } from '../../src/theme/useTheme';
 import { Button } from '../../src/ui/Button';
@@ -21,6 +22,7 @@ export default function NotificationsStep() {
   const preview = name.trim() ? `${name.trim()}, a small mark when you're ready.` : "a small mark when you're ready.";
   // Web notifications on iPhone can't carry buttons: tapping one opens Steady instead.
   const web = Platform.OS === 'web';
+  const signedIn = useApp((s) => s.account !== null);
 
   const allow = async () => {
     try {
@@ -41,7 +43,9 @@ export default function NotificationsStep() {
         <>
           <AppText variant="caption" tone="secondary" style={styles.center}>
             {web
-              ? "Your phone will ask next. Saying no is fine. To remind you, Steady's server keeps only when your reminders are due. Never your name, pills or moods."
+              ? signedIn
+                ? "Your phone will ask next. Saying no is fine. To remind you, Steady's server keeps when your reminders are due. You're signed in, so Steady's server also keeps your backup."
+                : "Your phone will ask next. Saying no is fine. To remind you, Steady's server keeps only when your reminders are due. Never your name, pills or moods."
               : 'Your phone will ask next. Saying no is fine.'}
           </AppText>
           <Button label="Continue" onPress={allow} />

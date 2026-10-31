@@ -18,14 +18,21 @@ const KEY = /^[A-Za-z0-9_-]{1,200}$/;
 export interface Deps {
   store: Store;
   now: number;
+  /** The web app's addresses, comma-separated (it is served at more than one). */
   allowedOrigin: string;
   /** Secret: rate limits count a keyed hash of each address, never the address. */
   ipKey: string;
 }
 
+/** True when `origin` is one of the comma-separated `allowed` addresses, exactly. */
+export function allowsOrigin(allowed: string, origin: string | null): origin is string {
+  return origin !== null && allowed.split(',').some((a) => a.trim() === origin);
+}
+
 export async function handle(req: Request, { store, now, allowedOrigin, ipKey }: Deps): Promise<Response> {
-  if (req.headers.get('Origin') !== allowedOrigin) return new Response(null, { status: 403 });
-  const cors = { 'Access-Control-Allow-Origin': allowedOrigin, Vary: 'Origin' };
+  const origin = req.headers.get('Origin');
+  if (!allowsOrigin(allowedOrigin, origin)) return new Response(null, { status: 403 });
+  const cors = { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' };
   const reply = (status: number) => new Response(null, { status, headers: cors });
 
   if (req.method === 'OPTIONS') {
@@ -117,15 +124,23 @@ export async function sha256(text: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function hmac(key: string, text: string): Promise<string> {
+// Imported once per Worker instance rather than on every request.
+const hmacKeys = new Map<string, CryptoKey>();
+
+/** Keyed hash, first 16 bytes as hex. */
+export async function hmac(key: string, text: string): Promise<string> {
   const enc = new TextEncoder();
-  const k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  let k = hmacKeys.get(key);
+  if (!k) {
+    k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    hmacKeys.set(key, k);
+  }
   const mac = new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(text)));
   return [...mac.subarray(0, 16)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /** Compares two hashes in time that doesn't depend on where they differ. */
-function sameHash(a: string, b: string): boolean {
+export function sameHash(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);

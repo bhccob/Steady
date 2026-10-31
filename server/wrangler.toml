@@ -4,6 +4,7 @@ compatibility_date = "2026-10-01"
 # Served at https://steady-reminders.bhccob.workers.dev only: no per-version preview addresses.
 workers_dev = true
 preview_urls = false
+routes = [{ pattern = "api.steadyapp.cc", custom_domain = true }]
 
 [[d1_databases]]
 binding = "DB"
@@ -17,7 +18,9 @@ migrations_dir = "migrations"
 crons = ["* * * * *"]
 
 [vars]
-ALLOWED_ORIGIN = "https://steady-beta-five.vercel.app"
+# The web app: its own address first, then the Vercel one it started at (comma-separated).
+ALLOWED_ORIGIN = "https://steadyapp.cc,https://steady-beta-five.vercel.app"
+MAIL_FROM = "Steady <sign-in@steadyapp.cc>"
 VAPID_SUBJECT = "https://steady-beta-five.vercel.app"
 # VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are secrets: `wrangler secret put` (see scripts/vapid-keys.mjs).
 # RATE_KEY is a secret too: 32 random bytes, so rate limits keep a keyed hash of each address, not the address.
